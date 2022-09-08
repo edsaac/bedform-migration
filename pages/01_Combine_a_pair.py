@@ -58,27 +58,16 @@ def fixPerspective(img,pointsFrom,pointsTarget):
 def get_timestamp(img):
     return img.getexif().get(306)
 
-def plotly_fig(self):
+def show_imgs(imgs):
     
     shared_kw = dict(figsize=[18,18/1.5/2],sharex=True,sharey=True,gridspec_kw=dict(hspace=0,wspace=0.01))
     fig,axs = plt.subplots(1,2,**shared_kw)
     
-    for ax,img in zip(axs, self.get_imgs()):
+    for ax,img in zip(axs, imgs):
         ax.imshow(img)
         ax.grid()
     
     return fig
-
-@dataclass
-class ImagePair:
-    left: Image
-    right: Image
-
-    def get_imgs(self):
-        return (self.left, self.right)
-
-
-
 
 """
 # Combine a pair of images to extract the beg geometry
@@ -106,24 +95,22 @@ if leftBytes and rightBytes:
     raw_imgs = (Image.open(leftBytes), Image.open(rightBytes))
 
     ## Read their datestamp
-    st.write(raw_imgs.get_timestamps())
+    for img in raw_imgs:
+        st.write(get_timestamp(img))
 
     # Plot them side by side
-    st.pyplot(raw_imgs.plotly_fig())
+    st.pyplot(show_imgs(raw_imgs))
 
     ## Barrel correction
-    barr_imgs = ImagePair(
-        fixBarrelDistortion(raw_imgs.left),
-        fixBarrelDistortion(raw_imgs.right))
+    barr_imgs = (fixBarrelDistortion(img) for img in raw_imgs)
 
     ## Plot them side by side
-    st.pyplot(barr_imgs.plotly_fig())
+    st.pyplot(show_imgs(barr_imgs))
 
     ## Perspective correction
     
-    pers_imgs = ImagePair(
-        fixPerspective(barr_imgs.left,PERS_ORIGIN_LEFT,PERS_TARGET_LEFT),
-        fixPerspective(barr_imgs.right,PERS_ORIGIN_RIGHT,PERS_TARGET_RIGHT))
+    pers_imgs = (fixPerspective(barr_imgs[0],PERS_ORIGIN_LEFT,PERS_TARGET_LEFT),
+        fixPerspective(barr_imgs[1],PERS_ORIGIN_RIGHT,PERS_TARGET_RIGHT))
 
     st.pyplot(pers_imgs.plotly_fig())
 
