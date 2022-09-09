@@ -1,20 +1,21 @@
-from dataclasses import dataclass
 import streamlit as st
 from tempfile import NamedTemporaryFile
+
 from PIL import Image
-import os 
+import subprocess
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 print(" --------------------- ")
 
-oneimg_kw = dict(figsize=[14,14/1.5])
+st.set_page_config(
+    page_title = None, 
+    page_icon  = None,
+    layout = "wide", 
+    initial_sidebar_state = "auto",
+    menu_items=None)
 
-PERS_ORIGIN_LEFT  = {'x':[0,1162,1162,0]  ,'y':[533,532,99,87]}
-PERS_ORIGIN_RIGHT = {'x':[84,1200,1200,84],'y':[495,500,64,49]}
-PERS_TARGET_LEFT  = {'x':[0,1162,1162,0]  ,'y':[515,515,75,75]}
-PERS_TARGET_RIGHT = {'x':[84,1200,1200,84],'y':[515,515,75,75]}
 BARREL_CORRECTIONS = (0.000, -0.015, 0.000)
 
 def fixBarrelDistortion(img, params = BARREL_CORRECTIONS):
@@ -30,41 +31,72 @@ def fixBarrelDistortion(img, params = BARREL_CORRECTIONS):
         img.save(in_img.name)
 
         ## Execute ImageMagick
-        os.system(f"""convert {in_img.name} -virtual-pixel black -distort Barrel "{a:.4f} {b:.4f} {c:.4f}" {out_img.name}""")
+        ms = subprocess.run(
+            [
+                "convert", 
+                in_img.name, 
+                "-virtual-pixel", 
+                "black", 
+                "-distort", 
+                "Barrel",
+                f"{a:.4f} {b:.4f} {c:.4f}",
+                out_img.name
+            ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        st.write(ms)
        
         return Image.open(out_img.name)
+
+
+PERS_ORIGIN_LEFT  = {'x':[0,1162,1162,0]  ,'y':[533,532,99,87]}
+PERS_ORIGIN_RIGHT = {'x':[84,1200,1200,84],'y':[495,500,64,49]}
+PERS_TARGET_LEFT  = {'x':[0,1162,1162,0]  ,'y':[515,515,75,75]}
+PERS_TARGET_RIGHT = {'x':[84,1200,1200,84],'y':[515,515,75,75]}
 
 def fixPerspective(img,pointsFrom,pointsTarget):
     
     originPairs = list(zip(pointsFrom['x'],pointsFrom['y']))
     targetPairs = list(zip(pointsTarget['x'],pointsTarget['y']))
-    
+
     with (
         NamedTemporaryFile(prefix="in",  suffix=".jpg") as in_img,
         NamedTemporaryFile(prefix="out", suffix=".jpg") as out_img
         ):
     
         img.save(in_img.name)
-    
+
         listCoords = ""
         for o,t in zip(originPairs,targetPairs):
             listCoords += f"{o[0]},{o[1]} {t[0]},{t[1]}  "
 
         ## Execute ImageMagick
-        os.system(f"""convert {in_img.name} -matte -virtual-pixel black -distort Perspective '{listCoords}' {out_img.name}""")
-    
+        ms = subprocess.run([
+            "convert",
+            in_img.name,
+            "-matte",
+            "-virtual-pixel",
+            "black",
+            "-distort",
+            "Perspective",
+            f'{listCoords}',
+            out_img.name
+            ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        st.write(ms)
+
         return Image.open(out_img.name)
 
 def get_timestamp(img):
     return img.getexif().get(306)
 
-def show_imgs(imgs):
+def show_imgs(imgs,imshow_kwargs={}):
     
     shared_kw = dict(figsize=[18,18/1.5/2],sharex=True,sharey=True,gridspec_kw=dict(hspace=0,wspace=0.01))
     fig,axs = plt.subplots(1,2,**shared_kw)
     
     for ax,img in zip(axs, imgs):
-        ax.imshow(img)
+        ax.imshow(img,**imshow_kwargs)
         ax.grid()
     
     return fig
@@ -92,48 +124,78 @@ with col2:
 if leftBytes and rightBytes:
     
     ## Open images
-    raw_imgs = (Image.open(leftBytes), Image.open(rightBytes))
+    raw_imgs = [Image.open(leftBytes), Image.open(rightBytes)]
 
-    ## Read their datestamp
-    for img in raw_imgs:
-        st.write(get_timestamp(img))
-
-    # Plot them side by side
+    """
+    ## Raw images
+    """
+    for img in raw_imgs: st.write(get_timestamp(img))
     st.pyplot(show_imgs(raw_imgs))
 
-    ## Barrel correction
-    barr_imgs = (fixBarrelDistortion(img) for img in raw_imgs)
-
-    ## Plot them side by side
+    """
+    ## Distortions
+         
+    ### Barrel correction
+    """
+    barr_imgs = [fixBarrelDistortion(img) for img in raw_imgs]
     st.pyplot(show_imgs(barr_imgs))
 
-    ## Perspective correction
+    """ 
+    ### Perspective correction
+    """
+    pers_imgs = [fixPerspective(img, orig, target) for img, orig, target 
+        in zip(
+            barr_imgs,
+            [PERS_ORIGIN_LEFT, PERS_ORIGIN_RIGHT],
+            [PERS_TARGET_LEFT, PERS_TARGET_RIGHT])]
     
-    pers_imgs = (fixPerspective(barr_imgs[0],PERS_ORIGIN_LEFT,PERS_TARGET_LEFT),
-        fixPerspective(barr_imgs[1],PERS_ORIGIN_RIGHT,PERS_TARGET_RIGHT))
+    st.pyplot(show_imgs(pers_imgs))
 
-    st.pyplot(pers_imgs.plotly_fig())
+    """ 
+    ## Miscelaneous
 
-    CROP_DIMENSIONS = (0, 250, 1200, 500)
+    ### Crop pictures
+    """
+    crop_imgs = [img.crop((0, 250, img.size[0], 500)) for img in pers_imgs]
+    st.pyplot(show_imgs(crop_imgs))
 
-    crop_imgs = ImagePair(
-        pers_imgs.left.crop((CROP_DIMENSIONS)),
-        pers_imgs.right.crop((CROP_DIMENSIONS))
-        ) 
+    """ 
+    ### Equalize pictures
+    """
+    st.header("Equalize pictures")
+    np_imgs = [np.asarray(img.convert('L')) for img in crop_imgs]
+    equa_imgs = [np.interp(img, (img.min(), img.max()), (0, 255)) for img in np_imgs]
+    inte_imgs = [Image.fromarray(img.astype(np.uint8),"L") for img in equa_imgs]
+
+    st.pyplot(show_imgs(inte_imgs,imshow_kwargs={'cmap':'Greys_r'}))
+
+    ## Overlap
+    st.header("Overlap")
+    XSHIFT = 1162 - 84  # Overlap between pictures
+    x, y = np.meshgrid(np.arange(inte_imgs[0].width),np.arange(inte_imgs[0].height,0,-1))
     
-    st.pyplot(crop_imgs.plotly_fig())
+    fig,ax= plt.subplots(1,1,figsize=[20,6])
+    ax.pcolormesh(x+XSHIFT,y,equa_imgs[1],cmap='Greys_r',shading='nearest',zorder=1)
+    ax.pcolormesh(x,y,equa_imgs[0],cmap='Greys_r',shading='nearest',alpha=1,zorder=2)
+    ax.set_aspect('equal')
+    st.pyplot(fig)
 
-    ## Equalize
+    ## Save merged
+    (width1, height1) = inte_imgs[0].size
+    (width2, height2) = inte_imgs[1].size
 
-    np_imgs = {k:np.asarray(v.convert('L')) for k,v in crop_imgs.items()}
-equa_imgs = {k:np.interp(v, (v.min(), v.max()), (0, 255)) for k,v in np_imgs.items()}
-inte_imgs = {k:Image.fromarray(v.astype(np.uint8),"L") for k,v in equa_imgs.items()}
+    result_width = width1 + XSHIFT
+    result_height = max(height1, height2)
 
-fig,axs = plt.subplots(1,2,**shared_kw)
-axs[0].imshow(inte_imgs['left'],cmap='Greys_r')
-axs[1].imshow(inte_imgs['right'],cmap='Greys_r')
-for ax in axs: ax.grid(which='both',lw=0.5,color='w')
-plt.show()
+    joined_img = Image.new('L', (result_width, result_height))
+    joined_img.paste(im=inte_imgs[1], box=(XSHIFT, 0))
+    joined_img.paste(im=inte_imgs[0], box=(0, 0))
+    
+    st.header("Merged")
+    st.image(joined_img)
+    joined_img.save("joined_img.jpg")
 
-
-
+    ## Finish
+    if st.button("Save progress."):
+        st.session_state.joined_img = joined_img
+        st.balloons()
