@@ -1,97 +1,188 @@
+import pickle
 import streamlit as st
-from tempfile import NamedTemporaryFile
+from streamlit_extras.switch_page_button import switch_page
 
 from PIL import Image, ImageDraw
-import subprocess
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from scipy.signal import savgol_filter
-from scipy.signal import find_peaks
+from scipy.signal import savgol_filter, find_peaks
 
 st.set_page_config(
     page_title = None, 
     page_icon  = None,
     layout = "wide", 
-    initial_sidebar_state = "auto",
+    initial_sidebar_state = "collapsed",
     menu_items=None)
 
 """
 # Color classification
 """
 
-if "joined_img" not in st.session_state.keys():
-    st.error("Seems like you didn't finish!")
+if "joined_img" not in st.session_state.keys() or "globalParameters" not in st.session_state.keys():
+    
+    cols = st.columns([3,1])
     joined_img = Image.open("./assets/250.jpg")
-    st.image(joined_img)
+    
+    with cols[0]:
+        st.image(joined_img, caption="🙀 I should not be here")
+    with cols[1]:
+        st.error("It seems like you skipped something!", icon="⛔")        
+        if st.button("🔙 Take me back"): switch_page("Combine a pair")
+
 else:
     joined_img = st.session_state.joined_img 
-    st.image(joined_img)
+    st.image(joined_img, caption="Combined photo that will be processed here")
     
+
     """
-    ## Picture histogram
+    *****
+
+    ## 1️⃣ Picture histogram
     """
 
-    MASKING_THRESHOLD = 90
+    cols = st.columns(2)
+    
+    with cols[0]:
+        MASKING_THRESHOLD = st.slider("Masking threshold",0,254,90,1,key="MASKING_THRESHOLD")
+        
+        with st.expander("What does this mean?",expanded=False):
+            """
+            |Threshold|Interpretation|Classification|
+            |----|----|----|
+            |Below|Darker than|Sand|
+            |Above|Brighter than|Water|
+            
+             
+             
+            """
+            
 
-    hits = joined_img.histogram()
+    with cols[1]:
 
-    fig,axs = plt.subplots(1,1,sharex=True,sharey=True,gridspec_kw={'wspace':0.01})
-    axs.vlines(np.arange(len(hits)),np.ones_like(hits),hits,color='grey')
-    axs.axvline(x=MASKING_THRESHOLD)
-    axs.set(ylim=[1,1.0E6],yscale='log')
-    axs.set(ylabel = "Pixel count", xlabel="Pixel value   [ 0  = Black | 255 = White ]")
-    st.pyplot(fig)
+        hits = joined_img.histogram()
 
+        fig,ax = plt.subplots(figsize=[8,4])
+        ax.vlines(np.arange(len(hits)),np.ones_like(hits),hits,color='grey')
+        ax.axvline(x = MASKING_THRESHOLD)
+        ax.set(
+            ylim = [1,1.0E6],
+            yscale = 'log',
+            ylabel = "Pixel count", 
+            xlabel = "Pixel value   [ 0  = Black | 255 = White ]")
+        
+        st.pyplot(fig, transparent=True)
+
+
+    """
+    *****
+
+    ## 2️⃣ Color classification
+    """
     masked = np.ma.masked_greater(joined_img,MASKING_THRESHOLD)
     ycoord = np.ma.count_masked(masked,axis=0)
     masked[np.logical_not(masked.mask)] = 1
 
-    fig,axs = plt.subplots(3,1,figsize=[20,8],sharex=True,gridspec_kw={'hspace':0.01})
-    axs[0].imshow(joined_img,alpha=1.0)
-    axs[1].imshow(masked,cmap='Greys_r')
-    axs[2].imshow(joined_img,cmap='Greys_r')
-    axs[2].plot(ycoord,c='orange',lw=5)
-    st.pyplot(fig)
+    fig,axs = plt.subplots(2,1,figsize=[20,8],sharex=True,gridspec_kw={'hspace':0.01})
+    ax = axs[0]
+    ax.imshow(masked,cmap='Greys_r')
 
-    """
-    ## Filtering and smoothing
-    """
-
-    fig,ax = plt.subplots(figsize=[20,8])
-    ax.plot(np.arange(len(ycoord)),ycoord,lw=1,c='orange',label='PixelCount')
-    ax.set(xlabel="Distance X [px]",ylabel="Distance Z [px]")
+    ax.text(40, 200, "Sand", 
+        fontsize=14, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
+    
+    ax.text(40, 10, "Water", 
+        fontsize=14, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
+    
+    ax = axs[1]
     ax.imshow(joined_img,cmap='Greys_r')
+    ax.plot(ycoord,c='orange',lw=2,label='Sediment - water interface')
     ax.legend()
-    st.pyplot(fig)
+    st.pyplot(fig,transparent=True)
 
-    SAVGOL_FILTER_PARAMS = dict(window_length=171,polyorder=4)
-    ysmoothed = savgol_filter(ycoord,**SAVGOL_FILTER_PARAMS)
+    """
+    *****
 
-    fig,ax = plt.subplots(figsize=[20,8])
-    xtemp = np.arange(len(ysmoothed))
-    ax.plot(xtemp,ysmoothed,lw=3,c='yellow',label='Filtered',zorder=2)
-    ax.plot(xtemp,ycoord,lw=2,c='orange',label='PixelCount')
-    ax.imshow(joined_img,cmap='Greys_r',zorder=1)
-    ax.set(xlabel="Distance X [px]",ylabel="Distance Z [px]")
+    ## 3️⃣ Filtering and smoothing
+    """
+
+    cols = st.columns(2)
+
+    with cols[0]:
+        """
+        How is the original line smoothed out?
+        Using a [Savitzky-Golay filter](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter),
+        which sequentially fits a polynomial to adjacent points.
+
+        **References & docs:**
+        - [📎](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html) `scipy.signal.savgol_filter` 
+        """
+        
+    with cols[1]:
+        WINDOW_LENGHT = st.slider("The length of the filter window (i.e., the number of coefficients)",1,500,171,1,key="WINDOW_LENGHT")
+        POLYORDER = st.slider("Order of the polynomial used to fit the samples",1,5,4,1,key="POLYORDER")
+
+        SAVGOL_FILTER_PARAMS = {
+            'window_length': WINDOW_LENGHT,
+            'polyorder': POLYORDER}
+        
+        ysmoothed = savgol_filter(ycoord,**SAVGOL_FILTER_PARAMS)
+        xtemp = np.arange(len(ysmoothed))
+
+    fig,axs = plt.subplots(2,1,figsize=[20,10],sharex=True,
+        gridspec_kw = {
+            'height_ratios':[1,1.5],
+            'hspace' : 0.01
+            })
+
+    ax = axs[0]
+    ax.plot(xtemp,ysmoothed,
+        lw=3,c='yellow',label='Smoothed',zorder=2)
+    ax.plot(xtemp,ycoord,
+        lw=2,c='orange',label='Original')
+    ax.imshow(joined_img,
+        cmap='Greys_r',zorder=1)
+    ax.set(ylabel="Distance Z [px]")
     ax.legend(loc='lower right')
-    st.pyplot(fig)
 
-    fig,ax = plt.subplots(figsize=[20,5])
-    xtemp = np.arange(len(ysmoothed))
-    ax.plot(xtemp,ysmoothed,lw=3,c='orange',alpha=0.9,label='Filtered',zorder=2)
-    ax.plot(xtemp,ycoord,lw=1,c='k',label='PixelCount',zorder=1)
-    ax.set(xlabel="Distance X [px]",ylabel="Distance Z [px]",ylim=[200,70],xlim=[0,joined_img.width])
+    ax = axs[1]
+    ax.plot(xtemp,ysmoothed,
+        lw=3,c='orange',alpha=0.9,label='Smoothed',zorder=2)
+    ax.plot(xtemp,ycoord,
+        lw=1,c='k',label='Original',zorder=1)
+    ax.set(
+        xlabel="Distance X [px]",
+        ylabel="Distance Z [px]",
+        ylim=[200,70],
+        xlim=[0,joined_img.width])
     ax.legend()
-    st.pyplot(fig)
+    st.pyplot(fig, transparent=True)
 
     """
-    ## Peaks and through identification
+    *****
+
+    ## 4️⃣ Peaks and trough identification
     """
 
-    TROUGH_FINDER_PARAMS = dict(distance=100,height=15,prominence=10)
-    PEAK_FINDER_PARAMS   = dict(distance=100,prominence=10)
+    cols = st.columns(2)
+
+    with cols[0]:
+        """
+        **How to systematically identify the peaks and troughs?**
+        
+        A peak or trough is located wherever the slope of the curve is zero.
+        For a signal, it suffices to compare each point to its neighbours.
+
+        **References & docs:**
+        - [📎](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) `scipy.signal.find_peaks` 
+        """
+        
+    with cols[1]:
+        MINIMAL_DISTANCE = st.slider("Minimal distance between peaks/troughs", 1,200,100,1, key="MINIMAL_DISTANCE")
+        PROMINENCE = st.slider("Prominence of peaks/troughs", 0.1,20.0,10.0,0.1, key="PROMINENCE")
+    
+    TROUGH_FINDER_PARAMS = dict(distance=MINIMAL_DISTANCE,height=15,prominence=PROMINENCE)
+    PEAK_FINDER_PARAMS   = dict(distance=MINIMAL_DISTANCE,prominence=PROMINENCE)
 
     whereTroughs,_ = find_peaks(ysmoothed,**TROUGH_FINDER_PARAMS)
     Troughs_df = pd.DataFrame({'X':whereTroughs,'ZT':[ysmoothed[w] for w in whereTroughs]})
@@ -101,28 +192,44 @@ else:
     Peaks_df = pd.DataFrame({'X':wherePeaks,'ZP':[ysmoothed[w] for w in wherePeaks]})
     Peaks_df.set_index('X',inplace=True)
 
-    fig,ax = plt.subplots(figsize=[20,8])
-    ax.plot(xtemp,ysmoothed,lw=3,c='yellow',label='Filtered',zorder=2)
-    ax.scatter(Troughs_df.index,Troughs_df['ZT'],c='r',s=100,zorder=3,label='Trough')
-    ax.scatter(Peaks_df.index,Peaks_df['ZP'],c='b',s=100,zorder=3,label='Peak')
-    ax.imshow(joined_img,cmap='Greys_r',zorder=1)
-    ax.set(xlabel="Distance X [px]",ylabel="Distance Z [px]")
+    fig,axs = plt.subplots(2,1,figsize=[20,10],sharex=True,
+        gridspec_kw = {
+            'height_ratios':[1,1.5],
+            'hspace' : 0.01
+            })
+    
+    ax = axs[0]
+    ax.plot(xtemp,ysmoothed,
+        lw=3,c='yellow',label='Smoothed',zorder=2)
+    ax.scatter(Troughs_df.index,Troughs_df['ZT'],
+        c='r',s=100,zorder=3,label='Trough')
+    ax.scatter(Peaks_df.index,Peaks_df['ZP'],
+        c='b',s=100,zorder=3,label='Peak')
+    ax.imshow(joined_img,
+        cmap='Greys_r',zorder=1)
+    ax.set(
+        xlabel="Distance X [px]",
+        ylabel="Distance Z [px]")
     ax.legend(loc='lower right')
-    st.pyplot(fig)
 
-    """
-    ## Info extracted from pictures
-    """
-    fig,ax = plt.subplots(1,1,figsize=[20,5])
-    ax.plot(xtemp,ysmoothed,lw=3,c='orange',alpha=0.9,label='Filtered',zorder=2)
-    ax.scatter(Troughs_df.index,Troughs_df['ZT'],c='r',s=100,zorder=3,label='Trough')
-    ax.scatter(Peaks_df.index,Peaks_df['ZP'],c='b',s=100,zorder=3,label='Peak')
-    ax.set(xlabel="Distance X [px]",ylabel="Distance Z [px]",ylim=[200,60],xlim=[0,joined_img.width])
+    ax = axs[1]
+    ax.plot(xtemp,ysmoothed,
+        lw=3,c='orange',alpha=0.9,label='Smoothed',zorder=2)
+    ax.scatter(Troughs_df.index,Troughs_df['ZT'],
+        c='r',s=100,zorder=3,label='Trough')
+    ax.scatter(Peaks_df.index,Peaks_df['ZP'],
+        c='b',s=100,zorder=3,label='Peak')
+    ax.set(
+        xlabel="Distance X [px]",
+        ylabel="Distance Z [px]",
+        ylim=[200,60],
+        xlim=[0,joined_img.width])
     ax.legend()
-    st.pyplot(fig)
+    st.pyplot(fig, transparent=True)
     
     """
-    ## Final result
+    *****
+    ## 5️⃣ Summary of info extracted from a pair pictures
     """
 
     endimg = Image.new('RGB', joined_img.size)
@@ -140,6 +247,40 @@ else:
         lineimg.ellipse([(wt-r,ysmoothed[wt]-r),(wt+r,ysmoothed[wt]+r)], 
                         outline = 'white', fill = 'blue', width = 1)
 
-    st.image(endimg)
-    st.dataframe(Troughs_df)
-    st.dataframe(Peaks_df)
+    st.image(endimg, caption="Merged photo with sediment/water interface, peaks and troughs")
+    
+    cols = st.columns(2)
+    with cols[0]: 
+        "### A list of troughs"
+        st.dataframe(Troughs_df)
+    with cols[1]: 
+        "### A list of peaks"
+        st.dataframe(Peaks_df)
+
+    st.info(
+        """
+        Check other pictures to check that the parameters you used for image classification 
+        and processing are adecuate for other pairs of pictures. 
+        """, icon="🎞️")
+
+    cols = st.columns(2)
+    
+    with cols[0]:
+        if st.button("📷 I want to try another pair of photos"):
+            del st.session_state.uploadedFilesCheck
+            switch_page("Combine a pair")
+
+    with cols[1]:
+        if st.button("🎥 I'm ready to process all my photos!"):
+            
+            ## Save globalParameters configuration
+            st.session_state.globalParameters["MASKING_THRESHOLD"] = st.session_state.MASKING_THRESHOLD
+            st.session_state.globalParameters["WINDOW_LENGHT"] = st.session_state.WINDOW_LENGHT
+            st.session_state.globalParameters["POLYORDER"] = st.session_state.POLYORDER
+            st.session_state.globalParameters["MINIMAL_DISTANCE"] = st.session_state.MINIMAL_DISTANCE
+            st.session_state.globalParameters["PROMINENCE"] = st.session_state.PROMINENCE
+            
+            with open("assets/globalParameters.pkl",'wb') as f:
+                pickle.dump(st.session_state.globalParameters,f)
+            
+            switch_page("Process all pairs")
