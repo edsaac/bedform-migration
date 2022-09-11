@@ -1,4 +1,4 @@
-from functools import cache
+
 from PIL import Image, ImageDraw
 import subprocess
 from tempfile import NamedTemporaryFile
@@ -322,7 +322,6 @@ def getDatabasePics(uploadedFiles):
     
     return db[['Time','File']], db['Imgs']
 
-@cache
 def processPair(imgs: tuple, parameters: dict):
     '''
     Streamlines the processing pair process

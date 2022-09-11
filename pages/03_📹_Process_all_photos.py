@@ -26,6 +26,25 @@ if "globalParameters" not in st.session_state.keys():
     with open("assets/globalParameters.pkl",'rb') as f:
         st.session_state.globalParameters = pickle.load(f)
 
+else: 
+    with st.sidebar: 
+        "#### Image processing parameters"
+        with st.expander("Color classification:",expanded=False):
+            st.metric("XSHIFT", st.session_state.globalParameters["XSHIFT"])
+
+        with st.expander("Image combination",expanded=False):
+            st.metric("MASKING_THRESHOLD", st.session_state.globalParameters["MASKING_THRESHOLD"])
+        
+        with st.expander("Smoothing and filtering:",expanded=False):
+            cols = st.columns(2)
+            with cols[0]: st.metric("WINDOW_LENGHT", st.session_state.globalParameters["WINDOW_LENGHT"])
+            with cols[1]: st.metric("POLYORDER", st.session_state.globalParameters["POLYORDER"])
+        
+        with st.expander("Peak identification:",expanded=False):
+            cols = st.columns(2)
+            with cols[0]: st.metric("MINIMAL_DISTANCE", st.session_state.globalParameters["MINIMAL_DISTANCE"])
+            with cols[1]: st.metric("PROMINENCE", st.session_state.globalParameters["PROMINENCE"])
+
 if "restart_3btn" not in st.session_state.keys():
     st.session_state.restart_3btn = False
 else:
@@ -45,24 +64,6 @@ with cols[0]:
 with cols[1]:
     if st.button("🔙 Go to the beginning"):
         switch_page("Combine a pair")
-
-with st.sidebar: 
-    "#### Image processing parameters"
-    with st.expander("Color classification:",expanded=False):
-        st.metric("XSHIFT", st.session_state.globalParameters["XSHIFT"])
-
-    with st.expander("Image combination",expanded=False):
-        st.metric("MASKING_THRESHOLD", st.session_state.globalParameters["MASKING_THRESHOLD"])
-    
-    with st.expander("Smoothing and filtering:",expanded=False):
-        cols = st.columns(2)
-        with cols[0]: st.metric("WINDOW_LENGHT", st.session_state.globalParameters["WINDOW_LENGHT"])
-        with cols[1]: st.metric("POLYORDER", st.session_state.globalParameters["POLYORDER"])
-    
-    with st.expander("Peak identification:",expanded=False):
-        cols = st.columns(2)
-        with cols[0]: st.metric("MINIMAL_DISTANCE", st.session_state.globalParameters["MINIMAL_DISTANCE"])
-        with cols[1]: st.metric("PROMINENCE", st.session_state.globalParameters["PROMINENCE"])
 
 ###################################
 ## Processing all photos
