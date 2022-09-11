@@ -11,6 +11,8 @@ from scipy.signal import savgol_filter, find_peaks
 
 from st_lg17cam import *
 
+plt.style.use('assets/edwin.mplstyle')
+
 st.set_page_config(
     page_title = "[NU CEE440] - Color classification", 
     page_icon  = "🎨",

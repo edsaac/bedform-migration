@@ -6,6 +6,8 @@ from st_lg17cam import *
 from streamlit_extras.switch_page_button import switch_page
 import pickle
 
+plt.style.use('assets/edwin.mplstyle')
+
 st.set_page_config(
     page_title = "[NU CEE440] - Process all photos", 
     page_icon  = "📹",
@@ -66,7 +68,7 @@ with st.sidebar:
 ## Processing all photos
 ###################################
 "****" 
-with st.form(key="foldersForm", clear_on_submit= True):
+with st.form(key="foldersForm", clear_on_submit= False):
     """
     ## ▶️ Upload all your photos
     """
@@ -185,7 +187,10 @@ if not st.session_state.restart_3btn:
             
                 fig,ax = plt.subplots()
                 for _, row in df_troughs.iterrows():
-                    ax.scatter(row["X(px)"],row["Z(px)"], c='purple')
+                    ax.scatter(
+                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["Z(px)"]],
+                        row["Z(px)"], 
+                        c='purple')
 
                 ax.set_xlabel("X [px]")
                 ax.set_ylabel("Z [px]")
