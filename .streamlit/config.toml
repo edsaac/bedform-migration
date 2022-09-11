@@ -9,5 +9,4 @@ secondaryBackgroundColor = "#E4E0EE"
 textColor = "#050505"
 
 [server]
-port = 8505
 maxUploadSize=10
