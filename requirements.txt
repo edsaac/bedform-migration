@@ -3,3 +3,7 @@ numpy
 pandas
 pillow
 scipy
+streamlit_extras
+plotly
+graphviz
+matplotlib
