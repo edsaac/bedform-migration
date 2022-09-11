@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.signal import savgol_filter, find_peaks
 
+from st_lg17cam import *
+
 st.set_page_config(
     page_title = None, 
     page_icon  = None,
@@ -19,6 +21,9 @@ st.set_page_config(
 """
 # Color classification
 """
+
+graph = generateProcessGraph(whichStep="identify")
+st.graphviz_chart(graph,use_container_width=True)
 
 if "joined_img" not in st.session_state.keys() or "globalParameters" not in st.session_state.keys():
     
@@ -33,13 +38,17 @@ if "joined_img" not in st.session_state.keys() or "globalParameters" not in st.s
 
 else:
     joined_img = st.session_state.joined_img 
-    st.image(joined_img, caption="Combined photo that will be processed here")
+    cols = st.columns([3,1])
+    with cols[0]:
+        st.image(joined_img, caption="Combined photo that will be processed here")
     
+    with cols[1]:
+        if st.button("🖇️ Go to the beginning"):
+            switch_page("Combine a pair")
 
     """
     *****
-
-    ## 1️⃣ Picture histogram
+    ## 1️⃣ Picture histogram & color classification
     """
 
     cols = st.columns(2)
@@ -74,12 +83,6 @@ else:
         
         st.pyplot(fig, transparent=True)
 
-
-    """
-    *****
-
-    ## 2️⃣ Color classification
-    """
     masked = np.ma.masked_greater(joined_img,MASKING_THRESHOLD)
     ycoord = np.ma.count_masked(masked,axis=0)
     masked[np.logical_not(masked.mask)] = 1
@@ -103,7 +106,7 @@ else:
     """
     *****
 
-    ## 3️⃣ Filtering and smoothing
+    ## 2️⃣ Filtering and smoothing
     """
 
     cols = st.columns(2)
@@ -161,7 +164,7 @@ else:
     """
     *****
 
-    ## 4️⃣ Peaks and trough identification
+    ## 3️⃣ Peaks and troughs identification
     """
 
     cols = st.columns(2)
@@ -185,12 +188,12 @@ else:
     PEAK_FINDER_PARAMS   = dict(distance=MINIMAL_DISTANCE,prominence=PROMINENCE)
 
     whereTroughs,_ = find_peaks(ysmoothed,**TROUGH_FINDER_PARAMS)
-    Troughs_df = pd.DataFrame({'X':whereTroughs,'ZT':[ysmoothed[w] for w in whereTroughs]})
-    Troughs_df.set_index('X',inplace=True)
-
+    Troughs_df = pd.DataFrame({'X':whereTroughs,'Z':[ysmoothed[w] for w in whereTroughs]})
+    Troughs_df["Type"] = "Trough"
+    
     wherePeaks,_ = find_peaks(-ysmoothed,**PEAK_FINDER_PARAMS)
-    Peaks_df = pd.DataFrame({'X':wherePeaks,'ZP':[ysmoothed[w] for w in wherePeaks]})
-    Peaks_df.set_index('X',inplace=True)
+    Peaks_df = pd.DataFrame({'X':wherePeaks,'Z':[ysmoothed[w] for w in wherePeaks]})
+    Peaks_df["Type"] = "Peak"
 
     fig,axs = plt.subplots(2,1,figsize=[20,10],sharex=True,
         gridspec_kw = {
@@ -201,9 +204,9 @@ else:
     ax = axs[0]
     ax.plot(xtemp,ysmoothed,
         lw=3,c='yellow',label='Smoothed',zorder=2)
-    ax.scatter(Troughs_df.index,Troughs_df['ZT'],
+    ax.scatter(Troughs_df['X'],Troughs_df['Z'],
         c='r',s=100,zorder=3,label='Trough')
-    ax.scatter(Peaks_df.index,Peaks_df['ZP'],
+    ax.scatter(Peaks_df['X'],Peaks_df['Z'],
         c='b',s=100,zorder=3,label='Peak')
     ax.imshow(joined_img,
         cmap='Greys_r',zorder=1)
@@ -215,9 +218,9 @@ else:
     ax = axs[1]
     ax.plot(xtemp,ysmoothed,
         lw=3,c='orange',alpha=0.9,label='Smoothed',zorder=2)
-    ax.scatter(Troughs_df.index,Troughs_df['ZT'],
+    ax.scatter(Troughs_df['X'],Troughs_df['Z'],
         c='r',s=100,zorder=3,label='Trough')
-    ax.scatter(Peaks_df.index,Peaks_df['ZP'],
+    ax.scatter(Peaks_df['X'],Peaks_df['Z'],
         c='b',s=100,zorder=3,label='Peak')
     ax.set(
         xlabel="Distance X [px]",
@@ -229,7 +232,7 @@ else:
     
     """
     *****
-    ## 5️⃣ Summary of info extracted from a pair pictures
+    ## 4️⃣ Summary of info extracted from a pair pictures
     """
 
     endimg = Image.new('RGB', joined_img.size)
@@ -246,16 +249,15 @@ else:
     for wt in wherePeaks:
         lineimg.ellipse([(wt-r,ysmoothed[wt]-r),(wt+r,ysmoothed[wt]+r)], 
                         outline = 'white', fill = 'blue', width = 1)
-
+    """
+    ### 🔵 The location of the sediment-bed interface
+    """
     st.image(endimg, caption="Merged photo with sediment/water interface, peaks and troughs")
     
-    cols = st.columns(2)
-    with cols[0]: 
-        "### A list of troughs"
-        st.dataframe(Troughs_df)
-    with cols[1]: 
-        "### A list of peaks"
-        st.dataframe(Peaks_df)
+    """
+    ### 🔵 A list of the peaks and troughs locations
+    """
+    st.dataframe(pd.concat([Troughs_df,Peaks_df]))
 
     st.info(
         """

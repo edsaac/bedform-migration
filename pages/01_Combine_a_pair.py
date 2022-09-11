@@ -19,8 +19,12 @@ st.set_page_config(
 
 
 """
-# Combine a pair of images to extract the beg geometry
+# Combine a pair of images to extract the bed geometry
 """
+
+graph = generateProcessGraph(whichStep="merge")
+st.graphviz_chart(graph,use_container_width=True)
+
 
 if "uploadedFilesCheck" not in st.session_state.keys():
     st.session_state.uploadedFilesCheck = True
@@ -28,18 +32,29 @@ if "uploadedFilesCheck" not in st.session_state.keys():
 if "globalParameters" not in st.session_state.keys():
     st.session_state.globalParameters = dict()
 
-with st.expander("▶️ Upload a pair of photos", expanded=st.session_state.uploadedFilesCheck):
-    
+if "restarted_btn" not in st.session_state.keys():
+    st.session_state.restarted_btn = False
+
+if st.session_state.restarted_btn:
+    del st.session_state.leftPic
+    del st.session_state.rightPic
+
+with st.form(key="filesForm", clear_on_submit= True):
+    """
+    ## ▶️ Upload a pair of photos
+    """
     col1, col2 = st.columns(2)
     with col1: 
-        leftBytes = st.file_uploader("Left photo","JPG",False,key="leftPic")
+        st.file_uploader("Left photo","JPG",False,key="leftPic")
     with col2: 
-        rightBytes = st.file_uploader("Right photo","JPG",False,key="rightPic")
+        st.file_uploader("Right photo","JPG",False,key="rightPic")
+    st.form_submit_button("Process!")
 
-if leftBytes and rightBytes:
-    
-    st.session_state.uploadedFilesCheck = False
-    
+if st.session_state.leftPic and st.session_state.rightPic and not st.session_state.restarted_btn:
+
+    leftBytes = st.session_state.leftPic
+    rightBytes = st.session_state.rightPic
+
     """
     *****
     ## 0️ Uploaded images
@@ -48,7 +63,7 @@ if leftBytes and rightBytes:
         st.warning(
             """
             The timestamp of both pictures **should not 
-            difer** by more than a few seconds.
+            differ** by more than a few seconds.
             """,
             icon="📷")
 
@@ -170,7 +185,7 @@ if leftBytes and rightBytes:
     cols = st.columns([1.5,1,1])
 
     with cols[1]:
-        if st.button("🎨 Save and go to color classification"):
+        if st.button("🎨 Save and go to color classification",key="save_and_leave"):
             st.session_state.joined_img = joined_img
             st.balloons()
 
@@ -185,6 +200,5 @@ if leftBytes and rightBytes:
             switch_page("color thresholding")
     
     with cols[2]:
-        if st.button("📷 I want to try another pair of photos"):
-            del st.session_state.uploadedFilesCheck
-            switch_page("Combine a pair")
+        if st.button("📷 I want to try another pair of photos", key="restarted_btn"):
+            pass

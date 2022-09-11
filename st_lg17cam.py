@@ -6,6 +6,77 @@ import pandas as pd
 import streamlit as st 
 import io
 import numpy as np 
+import graphviz 
+
+@st.experimental_singleton
+def generateProcessGraph(whichStep="merge"):
+
+    parent = graphviz.Digraph(name="Parent")
+    g = graphviz.Digraph(name="cluster_Combine",comment="Combine")
+    h = graphviz.Digraph(name="cluster_Identify")
+    
+    ## Formatting and styling
+    parent.graph_attr["rank"] = "same"
+    parent.graph_attr['rankdir'] = 'LR'
+    parent.graph_attr['bgcolor'] = '#F8F8FF'
+    
+    if whichStep == "merge":
+        g.graph_attr["rank"] = "same"
+
+        g.graph_attr["label"] = 'What we will do in this step'
+        g.graph_attr["style"] = 'filled'
+        g.graph_attr["color"] = 'lightgrey'
+
+        g.node_attr["style"] = "filled"
+        g.node_attr["fillcolor"] = "lightskyblue"
+        g.node_attr["color"] = "navy"
+
+        h.graph_attr["style"] = 'invis'
+
+        h.node_attr["style"] = "filled, dashed"
+        h.node_attr["fillcolor"] = "honeydew"
+        h.node_attr["color"] = "honeydew4"
+
+    elif whichStep == "identify":
+        h.graph_attr["rank"] = "same"
+
+        h.graph_attr["label"] = 'What we will do in this step'
+        h.graph_attr["style"] = 'filled'
+        h.graph_attr["color"] = 'lightgrey'
+        
+        h.node_attr["style"] = "filled"
+        h.node_attr["fillcolor"] = "lightskyblue"
+        h.node_attr["color"] = "navy"
+
+        g.graph_attr["style"] = 'invis'
+        g.node_attr["style"] = "filled, dashed"
+        g.node_attr["fillcolor"] = "honeydew"
+        g.node_attr["color"] = "honeydew4"
+    
+    else: pass
+
+    ## Topology
+    g.node("left","Left-side\nphoto")
+        # style = "filled", fillcolor="lightskyblue", shape = "egg", color = "navy")
+
+    g.node("right","Right-side\nphoto")
+    g.node("merged","Merged\nphoto")
+    g.edge("left","merged")
+    g.edge("right","merged")
+
+    h.node("interface","Sediment-water\ninterface")
+    h.node("peaks","Peaks\nlocation")
+    h.node("troughs","Troughs\nlocation")
+    # g.edge("merged","interface")
+    h.edge("interface","peaks")
+    h.edge("interface","troughs")
+
+    parent.subgraph(h)
+    parent.subgraph(g)
+    parent.edge("merged","interface")
+
+    return parent
+
 
 def fixBarrelDistortion(img, params):
     '''
@@ -166,7 +237,7 @@ def checkTimeStamps(timestamps):
             Looks like there are timestamps that do not coincide!
             {dates[0]} and {dates[1]}
             """)
-        
+
 def show_two_imgs(imgs,addTimestamp=False,imshow_kwargs={}):
     '''
     Plots the right and left photos side by side using plotly
@@ -249,7 +320,6 @@ def getDatabasePics(uploadedFiles):
     db.sort_values(by=['Time'], inplace=True, ignore_index=True)
     
     return db[['Time','File']], db['Imgs']
-
 
 
 def processPair(imgs: tuple, parameters: dict):
