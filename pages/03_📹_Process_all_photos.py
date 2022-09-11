@@ -189,12 +189,12 @@ if not st.session_state.restart_3btn:
                 fig,ax = plt.subplots()
                 for _, row in df_troughs.iterrows():
                     ax.scatter(
-                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["Z(px)"]],
-                        row["Z(px)"], 
+                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
+                        row["X(px)"], 
                         c='purple')
 
-                ax.set_xlabel("X [px]")
-                ax.set_ylabel("Z [px]")
+                ax.set_xlabel("Timestamp")
+                ax.set_ylabel("X [px]")
                 st.pyplot(fig, transparent=True)
 
             with cols[1]:
@@ -205,10 +205,13 @@ if not st.session_state.restart_3btn:
                 
                 fig,ax = plt.subplots()
                 for _, row in df_peaks.iterrows():
-                    ax.scatter(row["X(px)"],row["Z(px)"], c='purple')
+                    ax.scatter(
+                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
+                        row["X(px)"], 
+                        c='purple')
 
-                ax.set_xlabel("X [px]")
-                ax.set_ylabel("Z [px]")
+                ax.set_xlabel("Timestamp")
+                ax.set_ylabel("X [px]")
                 st.pyplot(fig, transparent=True)
 
             """
