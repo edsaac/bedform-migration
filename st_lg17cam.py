@@ -414,13 +414,13 @@ def processPair(imgs: tuple, parameters: dict):
     troughs = {
         'Timestamp' : timestamp,
         'X(px)'     : np.array([round(w,ndigits=1) for w in whereTroughs]),
-        'Y(px)'     : np.array([round(ysmoothed[w],ndigits=2) for w in whereTroughs])
+        'Z(px)'     : np.array([round(ysmoothed[w],ndigits=2) for w in whereTroughs])
     }
 
     peaks = {
         'Timestamp' : timestamp,
         'X(px)'     : np.array([round(w,ndigits=1) for w in wherePeaks]),
-        'Y(px)'     : np.array([round(ysmoothed[w],ndigits=2) for w in wherePeaks])
+        'Z(px)'     : np.array([round(ysmoothed[w],ndigits=2) for w in wherePeaks])
     }
 
     ## Create Line over image

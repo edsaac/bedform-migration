@@ -1,5 +1,13 @@
 import streamlit as st
 
+st.set_page_config(
+    page_title="CE440 Laboratory #2",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+
 cols = st.columns([2,1])
 with cols[0]:
     """

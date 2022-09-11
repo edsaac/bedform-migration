@@ -11,21 +11,21 @@ from st_lg17cam import *
 plt.style.use('assets/edwin.mplstyle')
 
 st.set_page_config(
-    page_title = None, 
-    page_icon  = None,
+    page_title = "[NU CEE440] - Processing a pair of photos", 
+    page_icon  = "➕",
     layout = "wide", 
-    initial_sidebar_state = "collapsed",
+    initial_sidebar_state = "auto",
     menu_items=None)
 
-
 """
-# Combine a pair of images to extract the bed geometry
+# ➕ Combine a pair of images
 """
-
 graph = generateProcessGraph(whichStep="merge")
 st.graphviz_chart(graph,use_container_width=True)
 
-
+###################################
+## Session state management
+###################################
 if "uploadedFilesCheck" not in st.session_state.keys():
     st.session_state.uploadedFilesCheck = True
 
@@ -35,10 +35,17 @@ if "globalParameters" not in st.session_state.keys():
 if "restarted_btn" not in st.session_state.keys():
     st.session_state.restarted_btn = False
 
+if "save_and_leave" in st.session_state.keys():
+    if st.session_state.save_and_leave:
+        switch_page("Color classification")
+
 if st.session_state.restarted_btn:
     del st.session_state.leftPic
     del st.session_state.rightPic
 
+###################################
+## Start by adding pictures
+###################################
 with st.form(key="filesForm", clear_on_submit= True):
     """
     ## ▶️ Upload a pair of photos
@@ -50,10 +57,16 @@ with st.form(key="filesForm", clear_on_submit= True):
         st.file_uploader("Right photo","JPG",False,key="rightPic")
     st.form_submit_button("Process!")
 
+###################################
+## Start processing
+###################################
 if st.session_state.leftPic and st.session_state.rightPic and not st.session_state.restarted_btn:
 
     leftBytes = st.session_state.leftPic
     rightBytes = st.session_state.rightPic
+
+    with st.sidebar:
+        "#### Image processing parameters"
 
     """
     *****
@@ -125,7 +138,7 @@ if st.session_state.leftPic and st.session_state.rightPic and not st.session_sta
 
     """
     with st.expander("Overlap",expanded=True):
-        # XSHIFT = 1162 - 84  # Overlap between pictures
+        
         cols = st.columns([2,1])
         with cols[0]:
             st.info("In order to merge both images in one, find where they should overlap.", icon="✴️")
@@ -175,30 +188,28 @@ if st.session_state.leftPic and st.session_state.rightPic and not st.session_sta
         
         st.image(joined_img,caption="Merged pictures")
     
-    
-    joined_img.save("joined_img.jpg")
     """ 
     *****
     ## 4️⃣ Save progress
     """
     
+    ## Save globalParameters configuration
+    st.session_state.globalParameters["BARREL_CORRECTIONS"] = BARREL_CORRECTIONS
+    st.session_state.globalParameters["PERS_ORIGIN_LEFT"] = PERS_ORIGIN_LEFT
+    st.session_state.globalParameters["PERS_ORIGIN_RIGHT"] = PERS_ORIGIN_RIGHT
+    st.session_state.globalParameters["PERS_TARGET_LEFT"] = PERS_TARGET_LEFT
+    st.session_state.globalParameters["PERS_TARGET_RIGHT"] = PERS_TARGET_RIGHT
+    st.session_state.globalParameters["XSHIFT"] = st.session_state.XSHIFT
+    st.session_state.joined_img = joined_img
+    
+    with st.sidebar:
+        with st.expander("Image combination",expanded=True):
+            st.metric("XSHIFT", st.session_state.globalParameters["XSHIFT"])
+
     cols = st.columns([1.5,1,1])
-
+    
     with cols[1]:
-        if st.button("🎨 Save and go to color classification",key="save_and_leave"):
-            st.session_state.joined_img = joined_img
-            st.balloons()
-
-            ## Save globalParameters configuration
-            st.session_state.globalParameters["BARREL_CORRECTIONS"] = BARREL_CORRECTIONS
-            st.session_state.globalParameters["PERS_ORIGIN_LEFT"] = PERS_ORIGIN_LEFT
-            st.session_state.globalParameters["PERS_ORIGIN_RIGHT"] = PERS_ORIGIN_RIGHT
-            st.session_state.globalParameters["PERS_TARGET_LEFT"] = PERS_TARGET_LEFT
-            st.session_state.globalParameters["PERS_TARGET_RIGHT"] = PERS_TARGET_RIGHT
-            st.session_state.globalParameters["XSHIFT"] = st.session_state.XSHIFT
-
-            switch_page("color thresholding")
+        st.button("🔙 I want to try another pair of photos", key="restarted_btn")
     
     with cols[2]:
-        if st.button("📷 I want to try another pair of photos", key="restarted_btn"):
-            pass
+        st.button("🎨 Save and go to color classification", key="save_and_leave")

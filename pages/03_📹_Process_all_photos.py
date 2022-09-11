@@ -1,7 +1,5 @@
-
-from heapq import merge
-import plotly.graph_objects as go
 import plotly.express as px
+import matplotlib.pyplot as plt
 
 import streamlit as st
 from st_lg17cam import *
@@ -9,16 +7,16 @@ from streamlit_extras.switch_page_button import switch_page
 import pickle
 
 st.set_page_config(
-    page_title = None, 
-    page_icon  = None,
+    page_title = "[NU CEE440] - Process all photos", 
+    page_icon  = "📹",
     layout = "wide", 
-    initial_sidebar_state = "collapsed",
+    initial_sidebar_state = "auto",
     menu_items=None)
 
-"""
-# Process all the images
-"""
 
+###################################
+## Session state management
+###################################
 if "globalParameters" not in st.session_state.keys(): 
     
     st.warning("Using default parameters. Go to the previous steps if you'd like to change one of the parameters", icon="🐜")
@@ -26,19 +24,47 @@ if "globalParameters" not in st.session_state.keys():
     with open("assets/globalParameters.pkl",'rb') as f:
         st.session_state.globalParameters = pickle.load(f)
 
+if "restart_3btn" not in st.session_state.keys():
+    st.session_state.restart_3btn = False
+else:
+    if st.session_state.restart_3btn:
+        switch_page("combine a pair")
+
+"""
+# 📹 Process all the photos
+"""
+
 cols = st.columns([3,1])
+
 with cols[0]:
-    with st.expander("0️⃣ Check that these are the correct parameters you decided on 👉"):
+    with st.expander("0️⃣ Check in the sidebar or below that these are the correct parameters you decided on 👈"):
         st.json(st.session_state.globalParameters,expanded=False)
 
 with cols[1]:
-    if st.button("🖇️ Go to the beginning"):
+    if st.button("🔙 Go to the beginning"):
         switch_page("Combine a pair")
 
-if "restart_3btn" not in st.session_state.keys():
-    st.session_state.restart_3btn = False
+with st.sidebar: 
+    "#### Image processing parameters"
+    with st.expander("Color classification:",expanded=False):
+        st.metric("XSHIFT", st.session_state.globalParameters["XSHIFT"])
 
+    with st.expander("Image combination",expanded=False):
+        st.metric("MASKING_THRESHOLD", st.session_state.globalParameters["MASKING_THRESHOLD"])
+    
+    with st.expander("Smoothing and filtering:",expanded=False):
+        cols = st.columns(2)
+        with cols[0]: st.metric("WINDOW_LENGHT", st.session_state.globalParameters["WINDOW_LENGHT"])
+        with cols[1]: st.metric("POLYORDER", st.session_state.globalParameters["POLYORDER"])
+    
+    with st.expander("Peak identification:",expanded=False):
+        cols = st.columns(2)
+        with cols[0]: st.metric("MINIMAL_DISTANCE", st.session_state.globalParameters["MINIMAL_DISTANCE"])
+        with cols[1]: st.metric("PROMINENCE", st.session_state.globalParameters["PROMINENCE"])
 
+###################################
+## Processing all photos
+###################################
 "****" 
 with st.form(key="foldersForm", clear_on_submit= True):
     """
@@ -155,24 +181,43 @@ if not st.session_state.restart_3btn:
             with cols[0]:
                 "### 🕳️ List of troughs"
                 df_troughs = pd.DataFrame(allTroughs)
-                
                 st.dataframe(df_troughs)
             
+                fig,ax = plt.subplots()
+                for _, row in df_troughs.iterrows():
+                    ax.scatter(row["X(px)"],row["Z(px)"], c='purple')
+
+                ax.set_xlabel("X [px]")
+                ax.set_ylabel("Z [px]")
+                st.pyplot(fig, transparent=True)
+
             with cols[1]:
                 "### ⛰️ List of peaks"
                 df_peaks = pd.DataFrame(allPeaks)
-
                 st.dataframe(df_peaks)
+
+                
+                fig,ax = plt.subplots()
+                for _, row in df_peaks.iterrows():
+                    ax.scatter(row["X(px)"],row["Z(px)"], c='purple')
+
+                ax.set_xlabel("X [px]")
+                ax.set_ylabel("Z [px]")
+                st.pyplot(fig, transparent=True)
 
             """
             *****
             ## 5️⃣ Summary and download data
             """
+
+            st.session_state["allTroughs"] = allTroughs
+            st.session_state["allPeaks"] = allPeaks
+
             cols = st.columns(2)
 
             with cols[0]:
                 st.write("**💀 Something did not go as expected**")
-                st.button("📷 I want to start over",key="restart_3btn")           
+                st.button("🔙 I want to start over", key="restart_3btn")           
 
             with cols[1]:
                 st.write("**🛫 All seems fine!**")

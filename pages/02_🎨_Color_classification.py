@@ -12,38 +12,61 @@ from scipy.signal import savgol_filter, find_peaks
 from st_lg17cam import *
 
 st.set_page_config(
-    page_title = None, 
-    page_icon  = None,
+    page_title = "[NU CEE440] - Color classification", 
+    page_icon  = "🎨",
     layout = "wide", 
-    initial_sidebar_state = "collapsed",
+    initial_sidebar_state = "auto",
     menu_items=None)
 
 """
-# Color classification
+# 🎨 Color classification
 """
-
 graph = generateProcessGraph(whichStep="identify")
 st.graphviz_chart(graph,use_container_width=True)
 
-if "joined_img" not in st.session_state.keys() or "globalParameters" not in st.session_state.keys():
+###################################
+## Session state management
+###################################
+if "restart_restarted_btn2" in st.session_state.keys():
+    if st.session_state.restarted_btn2:
+        del st.session_state.uploadedFilesCheck
+        switch_page("Combine a pair")
+
+if "save_and_continue2" in st.session_state.keys():
+    if st.session_state.save_and_continue2:
+        switch_page("Process all photos")
+
+if "joined_img" not in st.session_state.keys() \
+    or "globalParameters" not in st.session_state.keys():
     
+    "*******"
     cols = st.columns([3,1])
     joined_img = Image.open("./assets/250.jpg")
     
     with cols[0]:
         st.image(joined_img, caption="🙀 I should not be here")
+    
     with cols[1]:
         st.error("It seems like you skipped something!", icon="⛔")        
         if st.button("🔙 Take me back"): switch_page("Combine a pair")
 
+###################################
+## Processing colors
+###################################
 else:
     joined_img = st.session_state.joined_img 
+    
+    with st.sidebar: 
+        "#### Image processing parameters"
+        with st.expander("Image combination",expanded=True):
+            st.metric("XSHIFT", st.session_state.globalParameters["XSHIFT"])
+
     cols = st.columns([3,1])
     with cols[0]:
         st.image(joined_img, caption="Combined photo that will be processed here")
     
     with cols[1]:
-        if st.button("🖇️ Go to the beginning"):
+        if st.button("🔙 Go back"):
             switch_page("Combine a pair")
 
     """
@@ -56,24 +79,22 @@ else:
     with cols[0]:
         MASKING_THRESHOLD = st.slider("Masking threshold",0,254,90,1,key="MASKING_THRESHOLD")
         
-        with st.expander("What does this mean?",expanded=False):
+        with st.expander("What does this mean?",expanded=True):
             """
             |Threshold|Interpretation|Classification|
             |----|----|----|
             |Below|Darker than|Sand|
             |Above|Brighter than|Water|
-            
-             
-             
+
+            *****
             """
             
-
     with cols[1]:
 
         hits = joined_img.histogram()
 
         fig,ax = plt.subplots(figsize=[8,4])
-        ax.vlines(np.arange(len(hits)),np.ones_like(hits),hits,color='grey')
+        ax.vlines(np.arange(len(hits)),np.ones_like(hits),hits,color='purple')
         ax.axvline(x = MASKING_THRESHOLD)
         ax.set(
             ylim = [1,1.0E6],
@@ -101,11 +122,11 @@ else:
     ax.imshow(joined_img,cmap='Greys_r')
     ax.plot(ycoord,c='orange',lw=2,label='Sediment - water interface')
     ax.legend()
+    
     st.pyplot(fig,transparent=True)
 
     """
     *****
-
     ## 2️⃣ Filtering and smoothing
     """
 
@@ -259,30 +280,44 @@ else:
     """
     st.dataframe(pd.concat([Troughs_df,Peaks_df]))
 
-    st.info(
-        """
-        Check other pictures to check that the parameters you used for image classification 
-        and processing are adecuate for other pairs of pictures. 
-        """, icon="🎞️")
+    cols = st.columns([2,1,1])
 
-    cols = st.columns(2)
-    
     with cols[0]:
-        if st.button("📷 I want to try another pair of photos"):
-            del st.session_state.uploadedFilesCheck
-            switch_page("Combine a pair")
+        st.info(
+            """
+            Check other pictures to check that the parameters you used for image classification 
+            and processing are adecuate for other pairs of pictures. 
+            """, icon="🎞️")
 
+    
     with cols[1]:
-        if st.button("🎥 I'm ready to process all my photos!"):
+        st.button("🔙 I want to try another pair of photos", key="restarted_btn2")
+
+    with cols[2]:
+        st.button("🎥 I'm ready to process all my photos!", key="save_and_continue2")
             
-            ## Save globalParameters configuration
-            st.session_state.globalParameters["MASKING_THRESHOLD"] = st.session_state.MASKING_THRESHOLD
-            st.session_state.globalParameters["WINDOW_LENGHT"] = st.session_state.WINDOW_LENGHT
-            st.session_state.globalParameters["POLYORDER"] = st.session_state.POLYORDER
-            st.session_state.globalParameters["MINIMAL_DISTANCE"] = st.session_state.MINIMAL_DISTANCE
-            st.session_state.globalParameters["PROMINENCE"] = st.session_state.PROMINENCE
-            
-            with open("assets/globalParameters.pkl",'wb') as f:
-                pickle.dump(st.session_state.globalParameters,f)
-            
-            switch_page("Process all pairs")
+    ## Save globalParameters configuration
+    st.session_state.globalParameters["MASKING_THRESHOLD"] = st.session_state.MASKING_THRESHOLD
+    st.session_state.globalParameters["WINDOW_LENGHT"] = st.session_state.WINDOW_LENGHT
+    st.session_state.globalParameters["POLYORDER"] = st.session_state.POLYORDER
+    st.session_state.globalParameters["MINIMAL_DISTANCE"] = st.session_state.MINIMAL_DISTANCE
+    st.session_state.globalParameters["PROMINENCE"] = st.session_state.PROMINENCE
+    
+    with st.sidebar: 
+        with st.expander("Color classification:",expanded=True):
+            st.metric("MASKING_THRESHOLD", st.session_state.globalParameters["MASKING_THRESHOLD"])
+        
+        with st.expander("Smoothing and filtering:",expanded=True):
+            cols = st.columns(2)
+            with cols[0]: st.metric("WINDOW_LENGHT", st.session_state.globalParameters["WINDOW_LENGHT"])
+            with cols[1]: st.metric("POLYORDER", st.session_state.globalParameters["POLYORDER"])
+        
+        with st.expander("Peak identification:",expanded=True):
+            cols = st.columns(2)
+            with cols[0]: st.metric("MINIMAL_DISTANCE", st.session_state.globalParameters["MINIMAL_DISTANCE"])
+            with cols[1]: st.metric("PROMINENCE", st.session_state.globalParameters["PROMINENCE"])
+
+    with open("assets/globalParameters.pkl",'wb') as f:
+        pickle.dump(st.session_state.globalParameters,f)
+    
+        
