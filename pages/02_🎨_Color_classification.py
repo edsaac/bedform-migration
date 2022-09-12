@@ -319,7 +319,7 @@ else:
             with cols[0]: st.metric("MINIMAL_DISTANCE", st.session_state.globalParameters["MINIMAL_DISTANCE"])
             with cols[1]: st.metric("PROMINENCE", st.session_state.globalParameters["PROMINENCE"])
 
-    with open("assets/globalParameters.pkl",'wb') as f:
-        pickle.dump(st.session_state.globalParameters,f)
+    # with open("assets/globalParameters.pkl",'wb') as f:
+    #     pickle.dump(st.session_state.globalParameters,f)
     
         

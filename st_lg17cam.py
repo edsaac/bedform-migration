@@ -8,6 +8,7 @@ import streamlit as st
 import io
 import numpy as np 
 import graphviz 
+import pickle
 
 @st.experimental_singleton
 def generateProcessGraph(whichStep="merge"):
@@ -322,17 +323,15 @@ def getDatabasePics(uploadedFiles):
     
     return db[['Time','File']], db['Imgs']
 
-def processPair(imgs: tuple, parameters: dict):
+def processPair(imgs: tuple):
     '''
-    Streamlines the processing pair process
+    Streamlines the processing pair process using the parameters in 
+    the session state.
 
     Parameters
     ----------
     imgs : (st.UploadedFile)
         Tuple of uploaded files
-    
-    parameters: dict()
-        Dictionary with all the tweaking parameters
 
     Returns
     -------    
@@ -347,17 +346,23 @@ def processPair(imgs: tuple, parameters: dict):
 
     from scipy.signal import savgol_filter, find_peaks
 
-    BARREL_CORRECTIONS = parameters["BARREL_CORRECTIONS"]
-    PERS_ORIGIN_LEFT = parameters["PERS_ORIGIN_LEFT"]
-    PERS_ORIGIN_RIGHT = parameters["PERS_ORIGIN_RIGHT"]
-    PERS_TARGET_LEFT = parameters["PERS_TARGET_LEFT"]
-    PERS_TARGET_RIGHT = parameters["PERS_TARGET_RIGHT"]
-    XSHIFT = parameters["XSHIFT"]
-    MASKING_THRESHOLD = parameters["MASKING_THRESHOLD"]
-    WINDOW_LENGHT = parameters["WINDOW_LENGHT"]
-    POLYORDER = parameters["POLYORDER"]
-    MINIMAL_DISTANCE = parameters["MINIMAL_DISTANCE"]
-    PROMINENCE = parameters["PROMINENCE"]
+    if "globalParameters" in st.session_state.keys():
+        BARREL_CORRECTIONS = st.session_state.globalParameters["BARREL_CORRECTIONS"]
+        PERS_ORIGIN_LEFT = st.session_state.globalParameters["PERS_ORIGIN_LEFT"]
+        PERS_ORIGIN_RIGHT = st.session_state.globalParameters["PERS_ORIGIN_RIGHT"]
+        PERS_TARGET_LEFT = st.session_state.globalParameters["PERS_TARGET_LEFT"]
+        PERS_TARGET_RIGHT = st.session_state.globalParameters["PERS_TARGET_RIGHT"]
+        XSHIFT = st.session_state.globalParameters["XSHIFT"]
+        MASKING_THRESHOLD = st.session_state.globalParameters["MASKING_THRESHOLD"]
+        WINDOW_LENGHT = st.session_state.globalParameters["WINDOW_LENGHT"]
+        POLYORDER = st.session_state.globalParameters["POLYORDER"]
+        MINIMAL_DISTANCE = st.session_state.globalParameters["MINIMAL_DISTANCE"]
+        PROMINENCE = st.session_state.globalParameters["PROMINENCE"]
+
+    else:     
+        st.warning("Using default parameters. Go to the previous steps if you'd like to change one of the parameters", icon="🐜")
+        with open("assets/globalParameters.pkl",'rb') as f:
+            st.session_state.globalParameters = pickle.load(f)
 
     raw_imgs = [f for f in imgs]
     raw_imgs_timestamps = [get_timestamp(f) for f in raw_imgs] 

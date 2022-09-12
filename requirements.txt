@@ -7,3 +7,4 @@ streamlit_extras
 plotly
 graphviz
 matplotlib
+opencv-python-headless

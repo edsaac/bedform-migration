@@ -1,3 +1,8 @@
+from multiprocessing import Pool
+import tempfile
+import cv2
+from PIL import ImageDraw
+import subprocess
 import plotly.express as px
 import matplotlib.pyplot as plt
 
@@ -139,42 +144,73 @@ if not st.session_state.restart_3btn:
             """
 
             with st.spinner(' 🚧 Processing your photos...'):
-                processedBlob = [processPair((l, r), parameters=st.session_state.globalParameters) for l,r in zip(leftPhotos,rightPhotos)]
-            
+                nprocs = subprocess.check_output("nproc --all".split(" "))
+                cols = st.columns(2)
+                with cols[0]: st.metric("# of CPUs:",int(nprocs))
+                with cols[1]: st.metric("# of photos:",mergedb.shape[0])
+                
+                ## To run in one thread
+                # processedBlob = [processPair((l, r), parameters=st.session_state.globalParameters) for l,r in zip(leftPhotos,rightPhotos)]
+                
+                ## To run using multiprocessing
+                with Pool() as pool:
+                    processedBlob = pool.map(processPair, zip(leftPhotos,rightPhotos))
+
             st.success("All images have been processed!", icon="🎊")
             allPhotos, allTroughs, allPeaks = map(list,zip(*processedBlob))    
-        
+
             """
             *****
             ## 3️⃣ Visualize results
             """
-
-            allPhotosArray = np.stack(allPhotos)
             
-            fig = px.imshow(allPhotosArray, 
-                animation_frame = 0, 
-                labels = {
-                    "animation_frame":"slice"})
+            # #  Plotly animation >> It will take too much memory
+            # allPhotosArray = np.stack(allPhotos)
             
-            fig.update_layout(
-                showlegend=False,
-                autosize=True,
-                width=800,
-                title={
-                    'text': "🎥 Processed pictures",
-                    'y': 0.9,
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top'},
-                xaxis={
-                    'title':"X (px)"},
-                yaxis={
-                    'title':"Z (px)"},
-                font={
-                    'size': 14}
-                )
+            # fig = px.imshow(allPhotosArray, 
+            #     animation_frame = 0, 
+            #     labels = {
+            #         "animation_frame":"slice"})
+            
+            # fig.update_layout(
+            #     showlegend=False,
+            #     autosize=True,
+            #     width=800,
+            #     title={
+            #         'text': "🎥 Processed pictures",
+            #         'y': 0.9,
+            #         'x': 0.5,
+            #         'xanchor': 'center',
+            #         'yanchor': 'top'},
+            #     xaxis={
+            #         'title':"X (px)"},
+            #     yaxis={
+            #         'title':"Z (px)"},
+            #     font={
+            #         'size': 14}
+            #     )
 
-            st.plotly_chart(fig,use_container_width=True)
+            # st.plotly_chart(fig,use_container_width=True)
+
+            # grab some parameters of video to use them for writing a new, processed video
+            width  = allPhotos[0].width
+            height = allPhotos[0].height
+            frame_fps = 5
+            
+            with (tempfile.NamedTemporaryFile(suffix=".mp4") as videoFile,
+                  tempfile.NamedTemporaryFile(suffix=".mp4") as convertedVideo):
+            
+                # Specify a writer to write a processed video to a disk frame by frame
+                fourcc_mp4 = cv2.VideoWriter_fourcc(*'MP4V')
+                out_mp4 = cv2.VideoWriter(videoFile.name, fourcc_mp4, frame_fps, (width, height),isColor = True)
+
+                for photo in allPhotos:
+                    out_mp4.write(np.array(photo))
+                    
+                out_mp4.release()
+            
+                subprocess.run(args=f"ffmpeg -y -i {videoFile.name} -c:v libx264 {convertedVideo.name}".split(" "))
+                st.video(convertedVideo.name)
 
             """
             *****
@@ -185,34 +221,42 @@ if not st.session_state.restart_3btn:
                 "### 🕳️ List of troughs"
                 df_troughs = pd.DataFrame(allTroughs)
                 st.dataframe(df_troughs)
-            
-                fig,ax = plt.subplots()
-                for _, row in df_troughs.iterrows():
-                    ax.scatter(
-                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
-                        row["X(px)"], 
-                        c='purple')
-
-                ax.set_xlabel("Timestamp")
-                ax.set_ylabel("X [px]")
-                st.pyplot(fig, transparent=True)
 
             with cols[1]:
                 "### ⛰️ List of peaks"
                 df_peaks = pd.DataFrame(allPeaks)
                 st.dataframe(df_peaks)
+            
+            fig,ax = plt.subplots()
+            for _, row in df_troughs.iterrows():
+                ax.scatter(
+                    [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
+                    row["X(px)"], 
+                    c='purple')
+
+            ax.set(
+                xlabel="Timestamp",
+                ylabel="X [px]",
+                title="Troughs"
+            )
+                
+            st.pyplot(fig, transparent=True)
 
                 
-                fig,ax = plt.subplots()
-                for _, row in df_peaks.iterrows():
-                    ax.scatter(
-                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
-                        row["X(px)"], 
-                        c='purple')
+            fig,ax = plt.subplots()
+            for _, row in df_peaks.iterrows():
+                ax.scatter(
+                    [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
+                    row["X(px)"], 
+                    c='purple')
 
-                ax.set_xlabel("Timestamp")
-                ax.set_ylabel("X [px]")
-                st.pyplot(fig, transparent=True)
+            ax.set(
+                xlabel="Timestamp",
+                ylabel="X [px]",
+                title="Peaks"
+            )
+
+            st.pyplot(fig, transparent=True)
 
             """
             *****
