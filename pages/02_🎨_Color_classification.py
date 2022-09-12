@@ -29,7 +29,7 @@ st.graphviz_chart(graph,use_container_width=True)
 ###################################
 ## Session state management
 ###################################
-if "restart_restarted_btn2" in st.session_state.keys():
+if "restarted_btn2" in st.session_state.keys():
     if st.session_state.restarted_btn2:
         del st.session_state.uploadedFilesCheck
         switch_page("Combine a pair")
