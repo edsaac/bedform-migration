@@ -64,7 +64,7 @@ cols = st.columns([3,1])
 
 with cols[0]:
     with st.expander("0️⃣ Check in the sidebar or below that these are the correct parameters you decided on 👈"):
-        st.json(st.session_state.globalParameters,expanded=False)
+        st.json(st.session_state.globalParameters,expanded=True)
 
 with cols[1]:
     if st.button("🔙 Go to the beginning"):
