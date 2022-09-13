@@ -7,9 +7,11 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 
 import streamlit as st
+import extra_streamlit_components as stx
 from st_lg17cam import *
 from streamlit_extras.switch_page_button import switch_page
 import pickle
+import os 
 
 plt.style.use('assets/edwin.mplstyle')
 
@@ -73,19 +75,41 @@ with cols[1]:
 ###################################
 ## Processing all photos
 ###################################
-"****" 
-with st.form(key="foldersForm", clear_on_submit= False):
+chosen_id = stx.tab_bar(data=[
+    stx.TabBarItemData(id="photos", title="📷 Start", description="I have my own photos"),
+    stx.TabBarItemData(id="demo", title="🍀 Demo", description="I don't have my own photos")
+], default="photos")
+
+if chosen_id == "photos":
+    with st.form(key="foldersForm", clear_on_submit= False):
+        """
+        ## ▶️ Upload all your photos
+        """
+        col1, col2 = st.columns(2)
+        with col1: 
+            st.file_uploader("Left photos","JPG",True,key="leftPicFolder")
+        with col2: 
+            rightBytes = st.file_uploader("Right photos","JPG",True,key="rightPicFolder")
+        st.form_submit_button("Process!")
+
+elif chosen_id == "demo":
     """
-    ## ▶️ Upload all your photos
+    ## ▶️ Use demo photos
     """
     col1, col2 = st.columns(2)
-    with col1: 
-        st.file_uploader("Left photos","JPG",True,key="leftPicFolder")
-    with col2: 
-        rightBytes = st.file_uploader("Right photos","JPG",True,key="rightPicFolder")
-    st.form_submit_button("Process!")
 
-if not st.session_state.restart_3btn:
+    with col1:
+        with open('assets/2021/left.zip', 'rb') as myzip:
+            st.download_button("Download left pics", myzip, "left.ZIP")
+
+    with col2: 
+        with open('assets/2021/right.zip', 'rb') as myzip:
+            st.download_button("Download right pics", myzip, "right.ZIP")
+    
+else: pass
+
+
+if not st.session_state.restart_3btn and "leftPicFolder" in st.session_state.keys() and "rightPicFolder" in st.session_state.keys():
 
     leftBytes = st.session_state.leftPicFolder
     rightBytes = st.session_state.rightPicFolder

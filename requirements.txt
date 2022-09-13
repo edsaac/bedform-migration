@@ -1,3 +1,4 @@
+pip
 streamlit
 numpy
 pandas
@@ -8,3 +9,4 @@ plotly
 graphviz
 matplotlib
 opencv-python-headless
+extra-streamlit-components
