@@ -11,71 +11,76 @@ import graphviz
 import pickle
 
 @st.experimental_singleton
-def generateProcessGraph(whichStep="merge"):
+def generateProcessGraph():
 
     parent = graphviz.Digraph(name="Parent")
-    g = graphviz.Digraph(name="cluster_Combine",comment="Combine")
-    h = graphviz.Digraph(name="cluster_Identify")
+    g_pair = graphviz.Digraph(name="cluster_Pair")
+    g_calc = graphviz.Digraph(name="cluster_Calculate")
+    
+    ## Ranking and order   
+    for g in [g_pair, g_calc, parent]:
+        g.graph_attr["rank"] = "same"
+        g.graph_attr['rankdir'] = 'LR'
+
     
     ## Formatting and styling
-    parent.graph_attr["rank"] = "same"
-    parent.graph_attr['rankdir'] = 'LR'
     parent.graph_attr['bgcolor'] = '#F8F8FF'
     
-    if whichStep == "merge":
-        g.graph_attr["rank"] = "same"
+    ## Graph/Cluster styling
+    g_pair.graph_attr["label"] = 'Processing a single pair of photos'
+    g_pair.graph_attr["style"] = 'dotted'
+    g_pair.graph_attr["color"] = 'grey'
 
-        g.graph_attr["label"] = 'What we will do in this step'
-        g.graph_attr["style"] = 'filled'
-        g.graph_attr["color"] = 'lightgrey'
-
-        g.node_attr["style"] = "filled"
-        g.node_attr["fillcolor"] = "lightskyblue"
-        g.node_attr["color"] = "navy"
-
-        h.graph_attr["style"] = 'invis'
-
-        h.node_attr["style"] = "filled, dashed"
-        h.node_attr["fillcolor"] = "honeydew"
-        h.node_attr["color"] = "honeydew4"
-
-    elif whichStep == "identify":
-        h.graph_attr["rank"] = "same"
-
-        h.graph_attr["label"] = 'What we will do in this step'
-        h.graph_attr["style"] = 'filled'
-        h.graph_attr["color"] = 'lightgrey'
-        
-        h.node_attr["style"] = "filled"
-        h.node_attr["fillcolor"] = "lightskyblue"
-        h.node_attr["color"] = "navy"
-
-        g.graph_attr["style"] = 'invis'
-        g.node_attr["style"] = "filled, dashed"
-        g.node_attr["fillcolor"] = "honeydew"
-        g.node_attr["color"] = "honeydew4"
+    g_calc.graph_attr["label"] = 'Geomorphodynamics'
+    g_calc.graph_attr["style"] = 'dotted'
+    g_calc.graph_attr["color"] = 'grey'
     
-    else: pass
+    ## Node styling
+    g_pair.node_attr["shape"] = "box"
+    g_pair.node_attr["style"] = "filled"
+    g_pair.node_attr["fillcolor"] = "lightskyblue"
+    g_pair.node_attr["color"] = "navy"
+
+    g_calc.node_attr["shape"] = "box"
+    g_calc.node_attr["style"] = 'filled'
+    g_calc.node_attr["fillcolor"] = "paleturquoise1"
+    g_calc.node_attr["color"] = 'grey'
+
 
     ## Topology
-    g.node("left","Left-side\nphoto")
-        # style = "filled", fillcolor="lightskyblue", shape = "egg", color = "navy")
+    g_pair.node("left","Left-side\nphoto")
+    g_pair.node("right","Right-side\nphoto")
+    g_pair.node("merged","Merged\nphoto")
+    g_pair.node("interface","Sediment-water\ninterface")
+    g_pair.node("peaks","Peaks\nlocation")
+    g_pair.node("troughs","Troughs\nlocation")
+    
+    g_pair.edge("left","merged")
+    g_pair.edge("right","merged")
+    g_pair.edge("merged","interface")
+    g_pair.edge("interface","peaks")
+    g_pair.edge("interface","troughs")
 
-    g.node("right","Right-side\nphoto")
-    g.node("merged","Merged\nphoto")
-    g.edge("left","merged")
-    g.edge("right","merged")
+    g_calc.node("celerity", "Celerity")
+    g_calc.node("height", "Bedform\nheight")
+    g_calc.node("lenght", "Bedform\nlenght")
+    g_calc.node("flux", "Sediment\nflux")
 
-    h.node("interface","Sediment-water\ninterface")
-    h.node("peaks","Peaks\nlocation")
-    h.node("troughs","Troughs\nlocation")
-    # g.edge("merged","interface")
-    h.edge("interface","peaks")
-    h.edge("interface","troughs")
+    
+    parent.subgraph(g_calc)
+    parent.subgraph(g_pair)
 
-    parent.subgraph(h)
-    parent.subgraph(g)
-    parent.edge("merged","interface")
+    parent.node("common","Repeat for all\npairs of photos",
+        shape="folder")
+    
+    parent.edge("troughs","common")
+    parent.edge("common","celerity")
+    parent.edge("common","height")
+    parent.edge("common","lenght")
+    parent.edge("common","flux")
+    
+    parent.subgraph(g_calc)
+    
 
     return parent
 
