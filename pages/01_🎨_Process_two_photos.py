@@ -1,12 +1,10 @@
 import streamlit as st
-import extra_streamlit_components as stx
 from streamlit_extras.switch_page_button import switch_page
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from PIL import Image
-
 from scipy.signal import savgol_filter, find_peaks
 
 from st_lg17cam import *
@@ -30,11 +28,10 @@ placeholder = st.empty()
 if "globalParameters" not in st.session_state.keys():
     st.session_state.globalParameters = dict()
 else:
-    with st.sidebar:
-        st.write("Parameters:")
-        for k,v in st.session_state.globalParameters.items():
-            if "PERS" not in k and "BARR" not in k:
-                st.metric(k,v)
+    buildSidebar()
+
+if 'tempImages' not in st.session_state.keys():
+    st.session_state.tempImages = dict()
 
 if "save_and_continue" in st.session_state.keys():
     if st.session_state.save_and_continue:
@@ -46,9 +43,6 @@ if 'page' not in st.session_state.keys():
 def prevPage(): st.session_state.page -= 1
 def nextPage(): st.session_state.page += 1
 def firstPage(): st.session_state.page = 0
-
-if 'tempImages' not in st.session_state.keys():
-    st.session_state.tempImages = {}
 
 if "restarted_btn" not in st.session_state.keys():
     st.session_state.restarted_btn = False
@@ -65,7 +59,7 @@ if st.session_state.restarted_btn:
 
 with title:
     """
-    # 🎨 Identify the bed sediment - water interface
+    ## 🎨 Identify the bed sediment - water interface
     """
 
     with st.expander("Image processing flowchart",
@@ -110,7 +104,9 @@ if ("leftPic" in st.session_state.keys()) \
         and st.session_state.rightPic \
         and not st.session_state.restarted_btn:
 
-        ############# Page 0 ##############
+        ############# Page 0 ###################
+        # Read the photos as PIL Images
+        ########################################
         if st.session_state.page == 0:
 
             leftBytes = st.session_state.leftPic
@@ -119,7 +115,7 @@ if ("leftPic" in st.session_state.keys()) \
             with placeholder.container():
                 """
                 *****
-                ## 0️⃣ Uploaded images
+                # 0️⃣ Uploaded images
                 """
                 
                 with st.expander("🔵",expanded=True):
@@ -137,13 +133,15 @@ if ("leftPic" in st.session_state.keys()) \
                     st.session_state.tempImages["raw"] = raw_imgs
                     st.button("➡️ Go to next step", on_click=nextPage)
 
-        ############# Page 1 ##############
+        ############# Page 1 ###################
+        # Correct distortions with ImageMagick
+        ########################################
         elif st.session_state.page == 1:
             
             with placeholder.container():
                 """
                 *****
-                ## 1️⃣ Correct distortions
+                # 1️⃣ Correct distortions
                 """
                 with st.expander("🔵  Barrel correction:", expanded=True):
                     
@@ -182,17 +180,26 @@ if ("leftPic" in st.session_state.keys()) \
                 st.session_state.tempImages["pers"] = pers_imgs
                 st.button("➡️ Go to next step", on_click=nextPage)
 
-        ############# Page 2 ##############
+        ############# Page 2 ###################
+        # Crop and equalize using PIL
+        ########################################
         elif st.session_state.page == 2:
             
             with placeholder.container():
                 """
                 *****
-                ## 2️⃣ Additional edits
+                # 2️⃣ Additional edits
                 """
+                CROP_RANGE = st.slider(
+                    "Cropping range",
+                    min_value = 0,
+                    max_value = st.session_state.tempImages["pers"][0].height,
+                    value= (250,500),
+                    step = 1,
+                    key = "CROP_RANGE")
 
                 with st.expander("🔵 Crop top and bottom:",expanded=True):
-                    crop_imgs = [img.crop((0, 250, img.size[0], 500)) for img in st.session_state.tempImages["pers"]]
+                    crop_imgs = [img.crop((0, CROP_RANGE[0], img.size[0], CROP_RANGE[1])) for img in st.session_state.tempImages["pers"]]
                     fig = show_two_imgs(crop_imgs)
                     st.pyplot(fig, transparent=True)
 
@@ -204,6 +211,7 @@ if ("leftPic" in st.session_state.keys()) \
                     fig = show_two_imgs(inte_imgs,imshow_kwargs={'cmap':'Greys_r'})
                     st.pyplot(fig, transparent=True)
 
+                st.session_state.globalParameters["CROP_RANGE"] = CROP_RANGE
                 st.session_state.tempImages["equa"] = equa_imgs
                 st.session_state.tempImages["inte"] = inte_imgs
                 st.button("➡️ Go to next step", on_click=nextPage)
@@ -214,7 +222,7 @@ if ("leftPic" in st.session_state.keys()) \
             with placeholder.container():
                 """
                 *****
-                ## 3️⃣ Overlap and merge
+                # 3️⃣ Overlap and merge
                 """
         
                 with st.expander("Overlap",expanded=True):
@@ -225,7 +233,13 @@ if ("leftPic" in st.session_state.keys()) \
                         st.info("In order to merge both images in one, find where they should overlap.", icon="✴️")
             
                     with cols[1]:
-                        XSHIFT = st.number_input("Where in the first picture does the second begin?", 500, 1200, 1078, 1, key="XSHIFT")
+                        XSHIFT = st.number_input(
+                            "Where in the first picture does the second begin?", 
+                            min_value = 500, 
+                            max_value = 1200, 
+                            value = 1078, 
+                            step = 1,
+                            key="XSHIFT")
             
                     x, y = np.meshgrid(
                         np.arange(st.session_state.tempImages["inte"][0].width),
@@ -282,7 +296,7 @@ if ("leftPic" in st.session_state.keys()) \
             with placeholder.container():
                 """
                 *****
-                ## 4️⃣ Picture histogram & color classification
+                # 4️⃣ Picture histogram & color classification
                 """
 
                 cols = st.columns(2)
@@ -346,7 +360,7 @@ if ("leftPic" in st.session_state.keys()) \
 
                 """
                 *****
-                ## 5️⃣ Filtering and smoothing
+                # 5️⃣ Filtering and smoothing
                 """
 
                 cols = st.columns(2)
@@ -415,7 +429,8 @@ if ("leftPic" in st.session_state.keys()) \
                 ax.set(
                     xlabel="Distance X [px]",
                     ylabel="Distance Z [px]",
-                    xlim=[0,st.session_state.tempImages["join"].width])
+                    xlim=[0,st.session_state.tempImages["join"].width],
+                    ylim=[st.session_state.tempImages["join"].height, 0])
                 ax.legend()
                 st.pyplot(fig, transparent=True)
 
@@ -433,7 +448,7 @@ if ("leftPic" in st.session_state.keys()) \
                 """
                 *****
 
-                ## 6️⃣ Peaks and troughs identification
+                # 6️⃣ Peaks and troughs identification
                 """
 
                 cols = st.columns(2)
@@ -533,7 +548,8 @@ if ("leftPic" in st.session_state.keys()) \
                 ax.set(
                     xlabel="Distance X [px]",
                     ylabel="Distance Z [px]",
-                    xlim=[0,st.session_state.tempImages["join"].width])
+                    xlim=[0,st.session_state.tempImages["join"].width],
+                    ylim=[st.session_state.tempImages["join"].height, 0])
 
                 ax.legend()
                 st.pyplot(fig, transparent=True)
@@ -554,7 +570,7 @@ if ("leftPic" in st.session_state.keys()) \
 
                 """
                 *****
-                ## 7️⃣ Summary of info extracted from a pair pictures
+                # 7️⃣ Summary of info extracted from a pair pictures
                 """
 
                 endimg = Image.new('RGB', st.session_state.tempImages["join"].size)

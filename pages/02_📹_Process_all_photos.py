@@ -48,11 +48,7 @@ else:
         with open("assets/globalParameters.pkl",'rb') as f:
             st.session_state.globalParameters = pickle.load(f)
 
-with st.sidebar:
-    st.write("Parameters:")
-    for k,v in st.session_state.globalParameters.items():
-        if "PERS" not in k and "BARR" not in k:
-            st.metric(k,v)
+buildSidebar()
 
 if "restart_3btn" not in st.session_state.keys():
     st.session_state.restart_3btn = False
@@ -254,35 +250,11 @@ if not st.session_state.restart_3btn \
                     df_peaks = pd.DataFrame(st.session_state.tempPagx["allPeaks"])
                     st.dataframe(df_peaks)
                 
-                fig,ax = plt.subplots(figsize=[18,8])
-                for _, row in df_troughs.iterrows():
-                    ax.scatter(
-                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
-                        row["X(px)"], 
-                        c='purple')
-
-                ax.set(
-                    xlabel="Timestamp",
-                    ylabel="X [px]",
-                    title="Troughs"
-                )
-                    
+                "### 📉 Plots over time"
+                fig = plotPeaksOrTroughsOverTime(df_troughs, title="Troughs")
                 st.pyplot(fig, transparent=True)
 
-                    
-                fig,ax = plt.subplots(figsize=[18,8])
-                for _, row in df_peaks.iterrows():
-                    ax.scatter(
-                        [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
-                        row["X(px)"], 
-                        c='purple')
-
-                ax.set(
-                    xlabel="Timestamp",
-                    ylabel="X [px]",
-                    title="Peaks"
-                )
-
+                fig = plotPeaksOrTroughsOverTime(df_peaks, title="Peaks")
                 st.pyplot(fig, transparent=True)
 
                 st.session_state.tempPagx["df_troughs"] = df_troughs

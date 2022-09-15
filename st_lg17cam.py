@@ -84,6 +84,16 @@ def generateProcessGraph():
 
     return parent
 
+def buildSidebar():
+    with st.sidebar:
+        st.write("Parameters:")
+        for k,v in st.session_state.globalParameters.items():
+            if any( t in k for t in ["PERS","BARR"] ):
+                pass
+            elif any( t in k for t in ["CROP"] ):
+                st.metric(k,f"{v[0]} - {v[1]}")
+            else:
+                st.metric(k,v)
 
 def fixBarrelDistortion(img, params):
     '''
@@ -287,6 +297,42 @@ def show_two_imgs(imgs,addTimestamp=False,imshow_kwargs={}):
 
     return fig
 
+def plotPeaksOrTroughsOverTime(df,title=""):
+    '''
+    Plots the location of all the identified peaks or troughs 
+    over time
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe generated with timestamp and location
+    
+    Returns
+    -------
+    plt.Figure
+        Matplotlib figure
+    
+    Notes
+    -----
+    
+    '''
+    fig,ax = plt.subplots(figsize=[12,5])
+    
+    for _, row in df.iterrows():
+        ax.scatter(
+            [pd.to_datetime(row["Timestamp"],format=r'%Y:%m:%d %H:%M:%S') for _ in row["X(px)"]],
+            row["X(px)"], 
+            c = 'purple',
+            s = 200)
+
+    ax.set(
+        xlabel="Timestamp",
+        ylabel="X [px]",
+        title=title
+    )
+        
+    return fig
+
 def getDatabasePics(uploadedFiles):
     '''
     Lists pictures and extracts their timestamps
@@ -328,6 +374,44 @@ def getDatabasePics(uploadedFiles):
     
     return db[['Time','File']], db['Imgs']
 
+def sanitizeDataframe(df):
+    '''
+    Converts the CSV dataframe into np.arrays and datetimes
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Must have the columns Timestamp, X(px) and Z(px) as str objects
+
+    Returns
+    -------    
+    pd.DataFrame
+        The same but easy to calculate on
+
+    '''
+
+    df_clean = pd.DataFrame()
+    df_clean["Timestamp"] = pd.to_datetime(df["Timestamp"],format=r'%Y:%m:%d %H:%M:%S')
+    df_clean["X(px)"] = [ np.array(x.replace("[","").replace("]","").split()).astype(np.float) for x in df["X(px)"] ]
+    df_clean["Z(px)"] = [ np.array(x.replace("[","").replace("]","").split()).astype(np.float) for x in df["Z(px)"] ]
+    
+    return df_clean
+
+def expandPeakOrTroughDf(df):
+
+    df_expanded = pd.DataFrame(columns=["Timestamp","X(px)","Z(px)"])
+
+    for _, row in df.iterrows():
+        small = pd.DataFrame(
+            {"X(px)": row["X(px)"],
+            "Z(px)": row["Z(px)"]})
+        small["Timestamp"] = row["Timestamp"]
+        
+        df_expanded = pd.concat([df_expanded,small])
+    
+    return df_expanded
+
+
 def processPair(imgs: tuple):
     '''
     Streamlines the processing pair process using the parameters in 
@@ -335,7 +419,7 @@ def processPair(imgs: tuple):
 
     Parameters
     ----------
-    imgs : (st.UploadedFile)
+    imgs : tuple[st.UploadedFile]
         Tuple of uploaded files
 
     Returns
