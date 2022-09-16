@@ -66,7 +66,7 @@ else:
         with open("assets/globalParameters.pkl", 'rb') as f:
             st.session_state.globalParameters = pickle.load(f)
 
-# buildSidebar()
+buildSidebar()
 
 if "go_to_page_1" in st.session_state.keys():
 
@@ -92,9 +92,6 @@ if 'tempPagx' not in st.session_state.keys():
 def prevPage(): st.session_state.pagx -= 1
 def nextPage(): st.session_state.pagx += 1
 def firstPage(): st.session_state.pagx = -1
-
-
-st.sidebar.write(f"Page = {st.session_state.pagx}")
 
 
 def checkUploads():
