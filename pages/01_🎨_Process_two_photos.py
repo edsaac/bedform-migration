@@ -18,24 +18,15 @@ st.set_page_config(
     initial_sidebar_state="auto",
     menu_items=None)
 
-st.markdown(
-    """
-    <style>
-        .stButton
-        {
-            text-align: center;
-        }
-        .stDownloadButton
-        {
-            text-align: center;
-        }
-        button[kind="formSubmit"]
-        {
-            background-color: #E4E0EE;
-        }
-    </style>
-    """, unsafe_allow_html=True
-)
+with open("assets/style.css") as f:
+    css = f.read()
+    st.markdown(
+        f"""
+        <style>
+            {css}
+        </style>
+        """, unsafe_allow_html=True
+    )
 
 title_placeholder = st.container()
 content_placeholder = st.empty()

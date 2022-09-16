@@ -7,6 +7,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+with open("assets/style.css") as f:
+    css = f.read()
+    st.markdown(
+        f"""
+        <style>
+            {css}
+        </style>
+        """, unsafe_allow_html=True
+    )
+
 """
 # 🗄️ References
 """

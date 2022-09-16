@@ -18,20 +18,15 @@ st.set_page_config(
     initial_sidebar_state="auto",
     menu_items=None)
 
-st.markdown(
-    """
-    <style>
-        .stButton
-        {
-            text-align: center;
-        }
-        .stDownloadButton
-        {
-            text-align: center;
-        } 
-    </style>
-    """, unsafe_allow_html=True
-)
+with open("assets/style.css") as f:
+    css = f.read()
+    st.markdown(
+        f"""
+        <style>
+            {css}
+        </style>
+        """, unsafe_allow_html=True
+    )
 
 title = st.container()
 placeholder = st.empty()
@@ -348,6 +343,5 @@ elif st.session_state.pagx == 4:
             data=st.session_state.tempPagx["df_peaks"].to_csv().encode('utf-8'),
             file_name="df_peaks.csv")
 
-        with cols[1]:
-            st.button("〰️ I'm ready to process my dataset!",
-                      key="go_to_page_3")
+    st.button("⏭️ _I'm ready to calculate geomorphodynamics!_ ⏭️",
+              key="go_to_page_3")

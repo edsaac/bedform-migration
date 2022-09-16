@@ -1,0 +1,11 @@
+.stButton {
+    text-align: center;
+}
+
+.stDownloadButton {
+    text-align: center;
+}
+
+button[kind="formSubmit"] {
+    background-color: #E4E0EE;
+}
