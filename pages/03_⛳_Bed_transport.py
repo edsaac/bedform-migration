@@ -7,14 +7,14 @@ from st_lg17cam import *
 
 
 st.set_page_config(
-    page_title = "[NU CEE440] - Bed sediment transport", 
-    page_icon  = "⛳",
-    layout = "wide", 
-    initial_sidebar_state = "auto",
+    page_title="[NU CEE440] - Bed sediment transport",
+    page_icon="⛳",
+    layout="wide",
+    initial_sidebar_state="auto",
     menu_items=None)
 
 ###################################
-## Session state management
+# Session state management
 ###################################
 if "demodata" not in st.session_state.keys():
     st.session_state.demodata = dict()
@@ -22,7 +22,7 @@ if "demodata" not in st.session_state.keys():
     st.session_state.demodata["peak"] = pd.read_csv("assets/2021/df_peaks.csv")
 
 ###################################
-## Dataframe processing
+# Dataframe processing
 ###################################
 
 r"""
@@ -60,12 +60,12 @@ for df in [df_peaks, df_troughs]:
 
 ## Celerity $c$ [L/T]
 """
-cols = st.columns([1.3,1],gap="large")
+cols = st.columns([1.3, 1], gap="large")
 
 with cols[1]:
     """
     The celerity is defined as the speed at which a bedform migrates. 
-    
+
     Given the position over time plot, the celerity of each bedform can be 
     estimated as the change in position over time of the bedform, i.e., the
     slope of the line. 
@@ -81,13 +81,13 @@ with cols[1]:
 
 with cols[0]:
 
-    fig,ax = plt.subplots(figsize=[5,5])
+    fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
         df_troughs["Time (s)"],
-        df_troughs["X(px)"], 
-        c = 'seagreen',
-        s = 200,
+        df_troughs["X(px)"],
+        c='seagreen',
+        s=200,
         alpha=0.5)
 
     ax.set(
@@ -97,29 +97,29 @@ with cols[0]:
     )
 
     line_kwarg = dict(
-        c = "black"
+        c="black"
     )
 
-    ax.axline((0,500),(2100,2000), **line_kwarg)
-    ax.axline((500,0),(3300,2000), **line_kwarg)
-    ax.axline((1900,0),(4000,2000), **line_kwarg)
-    ax.axline((3000,0),(4000,1000), **line_kwarg)
+    ax.axline((0, 500), (2100, 2000), **line_kwarg)
+    ax.axline((500, 0), (3300, 2000), **line_kwarg)
+    ax.axline((1900, 0), (4000, 2000), **line_kwarg)
+    ax.axline((3000, 0), (4000, 1000), **line_kwarg)
 
     ax.text(1600, 1600,
-        r"$\measuredangle c$",
-        fontsize = 20)
-        
-    st.pyplot(fig, transparent = True)
+            r"$\measuredangle c$",
+            fontsize=20)
+
+    st.pyplot(fig, transparent=True)
 
 """
 ## Lenght $L$ [L]
 """
-cols = st.columns([1.3,1],gap="large")
+cols = st.columns([1.3, 1], gap="large")
 
 with cols[1]:
     """
     The lenght is the distance between two consecutive bedforms. 
-    
+
     In the position over time plot, it corresponds to the vertical 
     distance between two consecutive trend lines.
     """
@@ -134,13 +134,13 @@ with cols[1]:
 
 with cols[0]:
 
-    fig,ax = plt.subplots(figsize=[5,5])
+    fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
         df_troughs["Time (s)"],
-        df_troughs["X(px)"], 
-        c = 'seagreen',
-        s = 200,
+        df_troughs["X(px)"],
+        c='seagreen',
+        s=200,
         alpha=0.5)
 
     ax.set(
@@ -150,31 +150,31 @@ with cols[0]:
     )
 
     line_kwarg = dict(
-        c = "grey",
-        ls = "dotted"
+        c="grey",
+        ls="dotted"
     )
 
-    ax.axline((0,500),(2100,2000),**line_kwarg)
-    ax.axline((500,0),(3300,2000),**line_kwarg)
-    ax.axline((1900,0),(4000,2000),**line_kwarg)
-    ax.axline((3000,0),(4000,1000),**line_kwarg)
+    ax.axline((0, 500), (2100, 2000), **line_kwarg)
+    ax.axline((500, 0), (3300, 2000), **line_kwarg)
+    ax.axline((1900, 0), (4000, 2000), **line_kwarg)
+    ax.axline((3000, 0), (4000, 1000), **line_kwarg)
 
     ax.annotate(
         r"$L$",
-        xy=(1500, 1600), 
+        xy=(1500, 1600),
         xycoords='data',
-        xytext=(1500, 600), 
+        xytext=(1500, 600),
         textcoords='data',
-        fontsize = 20,
+        fontsize=20,
         arrowprops=dict(arrowstyle="|-|"))
 
-    st.pyplot(fig, transparent = True)
+    st.pyplot(fig, transparent=True)
 
 
 """
 ## Height $H$ [L]
 """
-cols = st.columns([1.3,1],gap="large")
+cols = st.columns([1.3, 1], gap="large")
 
 with cols[1]:
     """
@@ -185,9 +185,9 @@ with cols[1]:
     """
 
     st.warning(
-    r"""
+        r"""
     Why do the troughs have a higher elevation than the peaks?
-    """,icon="🤔")
+    """, icon="🤔")
 
     st.info(
         """
@@ -197,54 +197,54 @@ with cols[1]:
 
 with cols[0]:
 
-    fig,ax = plt.subplots(figsize=[5,5])
+    fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
         df_troughs["Time (s)"],
-        df_troughs["Z(px)"], 
-        c = 'salmon',
-        s = 200,
+        df_troughs["Z(px)"],
+        c='salmon',
+        s=200,
         alpha=0.5,
         label="Troughs")
-    
+
     ax.axhline(y=df_troughs["Z(px)"].mean(),
-        c="salmon")
+               c="salmon")
 
     ax.scatter(
         df_peaks["Time (s)"],
-        df_peaks["Z(px)"], 
-        c = 'violet',
-        s = 200,
+        df_peaks["Z(px)"],
+        c='violet',
+        s=200,
         alpha=0.5,
         label="Peaks")
 
     ax.axhline(y=df_peaks["Z(px)"].mean(),
-        c="violet")
+               c="violet")
 
     ax.set(
         xlabel="Time since first photo (s)",
         ylabel="Elevation Z [px]",
         title="Elevations over time",
-        ylim=(50,175)
+        ylim=(50, 175)
     )
 
     ax.annotate(
         r"$H$",
-        xy=(2000, 86), 
+        xy=(2000, 86),
         xycoords='data',
-        xytext=(2000, 125), 
+        xytext=(2000, 125),
         textcoords='data',
-        fontsize = 20,
+        fontsize=20,
         arrowprops=dict(arrowstyle="|-|"))
 
     ax.legend()
-    
-    st.pyplot(fig, transparent = True)
+
+    st.pyplot(fig, transparent=True)
 
 """
 ## Bedload sediment flux $Q_s$
 """
-cols = st.columns([1.3,1],gap="large")
+cols = st.columns([1.3, 1], gap="large")
 
 with cols[1]:
     r"""
@@ -259,9 +259,9 @@ with cols[1]:
 
 with cols[0]:
     st.warning(
-    r"""
+        r"""
     What are the units of $Q_s$?  Why is porosity involved here?
-    """,icon="🤔")
+    """, icon="🤔")
 
     st.info(
         """

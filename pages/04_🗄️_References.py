@@ -27,7 +27,7 @@ with cols[0]:
     Static plots were rendered using [Matplotlib](https://matplotlib.org/)
 
     Data sets manipulation was done using [Pandas](https://pandas.pydata.org/docs/user_guide/index.html#user-guide). 
-    
+
     [NumPy](https://numpy.org/doc/stable/) was used for array programming and calculation and [SciPy](https://docs.scipy.org/doc/scipy/) was used for signal processing. 
 
     This site was built using [Streamlit](https://streamlit.io/).
@@ -41,7 +41,7 @@ with cols[1]:
     """
     > **References:**
     > - [Dallmann et al. (2020)](https://doi.org/10.1029/2019wr027010). Impacts of suspended clay particle deposition on Sand-Bed morphodynamics. Water Resources Research, 56(8).
-    
+
     > - The ImageMagick Development Team. (2021). ImageMagick. Retrieved from https://imagemagick.org
     > - [Clark, A. (2015)](https://pillow.readthedocs.io/en/stable/index.html). Pillow (PIL Fork) Documentation. readthedocs. 
     > - [Hunter J. D. (2007)](https://doi.org/10.1109/MCSE.2007.55), "Matplotlib: A 2D Graphics Environment", Computing in Science & Engineering, vol. 9, no. 3, pp. 90-95.
