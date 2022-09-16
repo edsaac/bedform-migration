@@ -28,13 +28,18 @@ st.markdown(
         .stDownloadButton
         {
             text-align: center;
-        } 
+        }
+        button[kind="formSubmit"]
+        {
+            background-color: #E4E0EE;
+        }
     </style>
     """, unsafe_allow_html=True
 )
 
-title = st.container()
-placeholder = st.empty()
+title_placeholder = st.container()
+content_placeholder = st.empty()
+error_placeholder = st.container()
 
 ###################################
 # Session state management
@@ -56,6 +61,11 @@ if "save_and_continue" in st.session_state.keys():
 if 'page' not in st.session_state.keys():
     st.session_state.page = -1
 
+if 'showExpandedElements' not in st.session_state.keys():
+    st.session_state.showExpandedElements = True
+else:
+    st.session_state.showExpandedElements = False
+
 
 def prevPage(): st.session_state.page -= 1
 def nextPage(): st.session_state.page += 1
@@ -67,7 +77,6 @@ def checkUploads():
         if st.session_state.leftPic and st.session_state.rightPic:
             nextPage()
         else:
-            st.error("**⚠️⚠️ Upload both pictures before continuing ⚠️⚠️**", icon="🖼️")
             firstPage()
     else:
         firstPage()
@@ -87,29 +96,10 @@ def buildNav():
 ###################################
 
 
-with title:
+with title_placeholder:
     """
     # 🎨 Identify the bed sediment - water interface
     """
-
-    with st.expander("Image processing flowchart",
-                     expanded=(st.session_state.page == -1)):
-        graph = generateProcessGraph()
-        st.graphviz_chart(graph, use_container_width=True)
-
-    with st.expander("In case you don't have photos, download these pictures to run the app!",
-                     expanded=(st.session_state.page == -1)):
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            with open("assets/2021/left/DSC_0980.JPG", 'rb') as photo:
-                st.image(photo.read())
-                st.download_button("Download left pic", photo, "left.JPG")
-        with col2:
-            with open("assets/2021/right/DSC_0980.JPG", 'rb') as photo:
-                st.image(photo.read())
-                st.download_button("Download right pic", photo, "right.JPG")
 
 ###################################
 # Start processing
@@ -120,7 +110,26 @@ with title:
 ########################################
 if st.session_state.page == -1:
 
-    with placeholder.container():
+    with content_placeholder.container():
+        with st.expander("Image processing flowchart",
+                         expanded=st.session_state.showExpandedElements):
+            graph = generateProcessGraph()
+            st.graphviz_chart(graph, use_container_width=True)
+
+        with st.expander("In case you don't have photos, download these pictures to run the app!",
+                         expanded=st.session_state.showExpandedElements):
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                with open("assets/2021/left/DSC_0980.JPG", 'rb') as photo:
+                    st.image(photo.read())
+                    st.download_button("Download left pic", photo, "left.JPG")
+            with col2:
+                with open("assets/2021/right/DSC_0980.JPG", 'rb') as photo:
+                    st.image(photo.read())
+                    st.download_button("Download right pic", photo, "right.JPG")
+
         """
         *****
         ## 📤 Upload a pair of photos
@@ -134,7 +143,11 @@ if st.session_state.page == -1:
             with col2:
                 st.file_uploader("Right photo", "JPG", False, key="rightPic")
 
-            st.form_submit_button("🔜 Process!", on_click=checkUploads)
+            if st.form_submit_button("🔜 Process!", on_click=checkUploads):
+                if not st.session_state.leftPic or not st.session_state.rightPic:
+                    with error_placeholder:
+                        st.error("**🖼️ Upload both pictures before continuing 🖼️**", 
+                                icon="❌")
 
 ############# Page 0 ###################
 # Read the photos as PIL Images
@@ -144,7 +157,7 @@ if st.session_state.page == 0:
     leftBytes = st.session_state.leftPic
     rightBytes = st.session_state.rightPic
 
-    with placeholder.container():
+    with content_placeholder.container():
         """
         *****
         ## 0️⃣ Uploaded images
@@ -171,7 +184,7 @@ if st.session_state.page == 0:
 ########################################
 elif st.session_state.page == 1:
 
-    with placeholder.container():
+    with content_placeholder.container():
         """
         *****
         ## 1️⃣ Correct distortions
@@ -218,20 +231,26 @@ elif st.session_state.page == 1:
 ########################################
 elif st.session_state.page == 2:
 
-    with placeholder.container():
+    with content_placeholder.container():
         """
         *****
         ## 2️⃣ Additional edits
         """
-        CROP_RANGE = st.slider(
-            "Cropping range",
-            min_value=0,
-            max_value=st.session_state.tempImages["pers"][0].height,
-            value=(250, 500),
-            step=1,
-            key="CROP_RANGE")
-
         with st.expander("🔵 Crop top and bottom:", expanded=True):
+            cols = st.columns([1, 2])
+
+            with cols[0]:
+                st.info("Crop the images son only water and sand are visible.", icon="✴️")
+
+            with cols[1]:
+                CROP_RANGE = st.slider(
+                    "Cropping range",
+                    min_value=0,
+                    max_value=st.session_state.tempImages["pers"][0].height,
+                    value=(250, 500),
+                    step=1,
+                    key="CROP_RANGE")
+
             crop_imgs = [img.crop((0, CROP_RANGE[0], img.size[0], CROP_RANGE[1]))
                          for img in st.session_state.tempImages["pers"]]
             fig = show_two_imgs(crop_imgs)
@@ -253,7 +272,7 @@ elif st.session_state.page == 2:
 ############# Page 3 ##############
 elif st.session_state.page == 3:
 
-    with placeholder.container():
+    with content_placeholder.container():
         """
         *****
         ## 3️⃣ Overlap and merge
@@ -327,7 +346,7 @@ elif st.session_state.page == 3:
 ############# Page 4 ##############
 elif st.session_state.page == 4:
 
-    with placeholder.container():
+    with content_placeholder.container():
         """
         *****
         ## 4️⃣ Picture histogram & color classification
@@ -366,20 +385,20 @@ elif st.session_state.page == 4:
         ycoord = np.ma.count_masked(masked, axis=0)
         masked[np.logical_not(masked.mask)] = 1
 
-        fig, axs = plt.subplots(2, 1, figsize=[20, 8], sharex=True, gridspec_kw={'hspace': 0.01})
+        fig, axs = plt.subplots(2, 1, figsize=[10, 3], sharex=True, gridspec_kw={'hspace': 0.01})
         ax = axs[0]
         ax.imshow(masked, cmap='Greys_r')
 
-        ax.text(40, 200, "Sand",
-                fontsize=14, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
+        ax.text(40, 150, "Sand",
+                fontsize=8, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
 
         ax.text(40, 10, "Water",
-                fontsize=14, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
+                fontsize=8, va='top', bbox=dict(boxstyle='round', fc='white', alpha=0.9))
 
         ax = axs[1]
         ax.imshow(st.session_state.tempImages["join"], cmap='Greys_r')
-        ax.plot(ycoord, c='orange', lw=2, label='Sediment - water interface')
-        ax.legend()
+        ax.plot(ycoord, c='orange', lw=3, label='Sediment - water interface')
+        ax.legend(loc="lower center",bbox_to_anchor = (0.5, 1.0), fontsize=8)
 
         st.pyplot(fig, transparent=True)
 
@@ -390,7 +409,7 @@ elif st.session_state.page == 4:
 ############# Page 5 ##############
 elif st.session_state.page == 5:
 
-    with placeholder.container():
+    with content_placeholder.container():
 
         """
         *****
@@ -437,7 +456,7 @@ elif st.session_state.page == 5:
 
         xtemp = np.arange(len(ysmoothed))
 
-        fig, axs = plt.subplots(2, 1, figsize=[20, 10], sharex=True,
+        fig, axs = plt.subplots(2, 1, figsize=[14, 8], sharex=True,
                                 gridspec_kw={
             'height_ratios': [1, 1.5],
             'hspace': 0.01
@@ -477,7 +496,7 @@ elif st.session_state.page == 5:
 ############# Page 6 ##############
 elif st.session_state.page == 6:
 
-    with placeholder.container():
+    with content_placeholder.container():
 
         """
         *****
@@ -542,7 +561,7 @@ elif st.session_state.page == 6:
 
         xtemp = np.arange(len(st.session_state.tempImages["ysmoothed"]))
 
-        fig, axs = plt.subplots(2, 1, figsize=[20, 10], sharex=True,
+        fig, axs = plt.subplots(2, 1, figsize=[14, 8], sharex=True,
                                 gridspec_kw={
             'height_ratios': [1, 1.5],
             'hspace': 0.01
@@ -600,7 +619,7 @@ elif st.session_state.page == 6:
 ############# Page 7 ##############
 elif st.session_state.page == 7:
 
-    with placeholder.container():
+    with content_placeholder.container():
 
         """
         *****

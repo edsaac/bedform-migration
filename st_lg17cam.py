@@ -85,15 +85,32 @@ def generateProcessGraph():
 
 def buildSidebar():
     with st.sidebar:
-        st.write("Parameters:")
+
+        st.write(
+            r"""
+                $$ \textsf{Parameters:}$$
+            """
+        )
+
+        pars = []
+        vars = []
+
         for k, v in st.session_state.globalParameters.items():
             if any(t in k for t in ["PERS", "BARR"]):
                 pass
-            elif any(t in k for t in ["CROP"]):
-                st.metric(k, f"{v[0]} - {v[1]}")
+            elif "CROP" in k:
+                pars.append(k)
+                vars.append(f"{v[0]} - {v[1]}")
             else:
-                st.metric(k, v)
+                pars.append(k)
+                vars.append(f"{v:.1f}")
 
+        param_df = pd.DataFrame(columns=["Parameter","Value"])       
+        param_df["Parameter"] = pars
+        param_df["Value"] = vars
+        param_df.set_index("Parameter",inplace=True)
+
+        st.dataframe(param_df)
 
 def fixBarrelDistortion(img, params):
     '''
