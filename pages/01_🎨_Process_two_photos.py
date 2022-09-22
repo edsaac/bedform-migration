@@ -231,7 +231,7 @@ elif st.session_state.page == 2:
             cols = st.columns([1, 2])
 
             with cols[0]:
-                st.info("Crop the images son only water and sand are visible.", icon="✴️")
+                st.info("Crop the images so only water and sand are visible.", icon="✴️")
 
             with cols[1]:
                 CROP_RANGE = st.slider(
