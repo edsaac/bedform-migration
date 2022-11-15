@@ -11,7 +11,7 @@ import graphviz
 import pickle
 
 
-@st.experimental_singleton
+#@st.experimental_singleton
 def generateProcessGraph():
 
     parent = graphviz.Digraph(name="Parent")

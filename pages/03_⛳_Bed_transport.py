@@ -115,9 +115,7 @@ with cols[0]:
     ax.axline((1900, 0), (4000, 2000), **line_kwarg)
     ax.axline((3000, 0), (4000, 1000), **line_kwarg)
 
-    ax.text(1600, 1600,
-            r"$\measuredangle c$",
-            fontsize=20)
+    ax.text(1600, 1600, r"$\measuredangle c$", fontsize=20)
 
     st.pyplot(fig, transparent=True)
 
