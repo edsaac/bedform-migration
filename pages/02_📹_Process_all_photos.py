@@ -244,7 +244,7 @@ elif st.session_state.pagx == 1:
             st.metric("# of photos:", st.session_state.tempPagx["mergedb"].shape[0])
 
         # To run using multiprocessing
-        with Pool() as pool:
+        with Pool(processes=2) as pool:
             processedBlob = pool.map(
                 processPair,
                 zip(
