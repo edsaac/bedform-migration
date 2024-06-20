@@ -2,12 +2,16 @@ import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 
 import numpy as np
+import pandas as pd
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from PIL import Image
-from scipy.signal import savgol_filter, find_peaks
 
-from st_lg17cam import *
+from PIL import Image, ImageDraw
+from scipy.signal import savgol_filter, find_peaks
+import pickle
+
+from st_lg17cam import buildSidebar, generateProcessGraph, show_two_imgs, fixBarrelDistortion, fixPerspective
 
 plt.style.use('assets/edwin.mplstyle')
 
@@ -80,7 +84,7 @@ def buildNav():
     with cols[1]:
         st.button("🔙 Go to previous step", on_click=prevPage)
     with cols[2]:
-        st.button("🔜 Go to next step", on_click=nextPage)
+        st.button("🔜 **Go to next step**", on_click=nextPage, type="primary")
 
 ###################################
 # Start Streamlit App

@@ -4,10 +4,13 @@ import cv2
 import subprocess
 import matplotlib.pyplot as plt
 import streamlit as st
-from st_lg17cam import *
-from streamlit_extras.switch_page_button import switch_page
-import pickle
+from st_lg17cam import buildSidebar, getDatabasePics, processPair, plotPeaksOrTroughsOverTime
 
+from streamlit_extras.switch_page_button import switch_page
+
+import pickle
+import numpy as np
+import pandas as pd
 
 plt.style.use('assets/edwin.mplstyle')
 
@@ -203,7 +206,7 @@ elif st.session_state.pagx == 0:
         def time_greater_than(cell_value, threshold=5.0):
             highlight = 'background-color: darkorange;'
             default = 'background-color: aquamarine;'
-            donothing = ''
+            _ = ''
 
             if abs(cell_value) >= threshold:
                 return highlight

@@ -21,7 +21,7 @@ with open("assets/style.css") as f:
 # 🗄️ References
 """
 
-st.video("assets/timelapse.mp4")
+st.video("assets/timelapse.mp4", autoplay=True, muted=True)
 
 "****"
 

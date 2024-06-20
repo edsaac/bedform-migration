@@ -1,9 +1,8 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from st_lg17cam import *
+from st_lg17cam import sanitizeDataframe, expandPeakOrTroughDf
 
 
 st.set_page_config(
@@ -11,7 +10,8 @@ st.set_page_config(
     page_icon="⛳",
     layout="wide",
     initial_sidebar_state="auto",
-    menu_items=None)
+    menu_items=None,
+)
 
 with open("assets/style.css") as f:
     css = f.read()
@@ -20,7 +20,8 @@ with open("assets/style.css") as f:
         <style>
             {css}
         </style>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True,
     )
 
 ###################################
@@ -87,28 +88,22 @@ with cols[1]:
 
         You can report your results as a [frequency distribution](https://en.wikipedia.org/wiki/Histogram), 
         indicating the mean and standard deviation.
-        """, icon="☑️")
+        """,
+        icon="☑️",
+    )
 
 with cols[0]:
-
     fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
-        df_troughs["Time (s)"],
-        df_troughs["X(px)"],
-        c='seagreen',
-        s=200,
-        alpha=0.5)
+        df_troughs["Time (s)"], df_troughs["X(px)"], c="seagreen", s=200, alpha=0.5
+    )
 
     ax.set(
-        xlabel="Time since first photo (s)",
-        ylabel="X [px]",
-        title="Troughs over time"
+        xlabel="Time since first photo (s)", ylabel="X [px]", title="Troughs over time"
     )
 
-    line_kwarg = dict(
-        c="black"
-    )
+    line_kwarg = dict(c="black")
 
     ax.axline((0, 500), (2100, 2000), **line_kwarg)
     ax.axline((500, 0), (3300, 2000), **line_kwarg)
@@ -138,29 +133,22 @@ with cols[1]:
 
         You can report your results as a [frequency distribution](https://en.wikipedia.org/wiki/Histogram), 
         indicating the mean and standard deviation.
-        """, icon="☑️")
+        """,
+        icon="☑️",
+    )
 
 with cols[0]:
-
     fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
-        df_troughs["Time (s)"],
-        df_troughs["X(px)"],
-        c='seagreen',
-        s=200,
-        alpha=0.5)
+        df_troughs["Time (s)"], df_troughs["X(px)"], c="seagreen", s=200, alpha=0.5
+    )
 
     ax.set(
-        xlabel="Time since first photo (s)",
-        ylabel="X [px]",
-        title="Troughs over time"
+        xlabel="Time since first photo (s)", ylabel="X [px]", title="Troughs over time"
     )
 
-    line_kwarg = dict(
-        c="grey",
-        ls="dotted"
-    )
+    line_kwarg = dict(c="grey", ls="dotted")
 
     ax.axline((0, 500), (2100, 2000), **line_kwarg)
     ax.axline((500, 0), (3300, 2000), **line_kwarg)
@@ -170,11 +158,12 @@ with cols[0]:
     ax.annotate(
         r"$L$",
         xy=(1500, 1600),
-        xycoords='data',
+        xycoords="data",
         xytext=(1500, 600),
-        textcoords='data',
+        textcoords="data",
         fontsize=20,
-        arrowprops=dict(arrowstyle="|-|"))
+        arrowprops=dict(arrowstyle="|-|"),
+    )
 
     st.pyplot(fig, transparent=True)
 
@@ -195,55 +184,59 @@ with cols[1]:
     st.warning(
         r"""
     Why do the troughs have a higher elevation than the peaks?
-    """, icon="🤔")
+    """,
+        icon="🤔",
+    )
 
     st.info(
         """
         Calculate the bedform height and assess the uncertainty on 
         your estimate.
-        """, icon="☑️")
+        """,
+        icon="☑️",
+    )
 
 with cols[0]:
-
     fig, ax = plt.subplots(figsize=[5, 5])
 
     ax.scatter(
         df_troughs["Time (s)"],
         df_troughs["Z(px)"],
-        c='salmon',
+        c="salmon",
         s=200,
         alpha=0.5,
-        label="Troughs")
+        label="Troughs",
+    )
 
-    ax.axhline(y=df_troughs["Z(px)"].mean(),
-               c="salmon")
+    ax.axhline(y=df_troughs["Z(px)"].mean(), c="salmon")
 
     ax.scatter(
         df_peaks["Time (s)"],
         df_peaks["Z(px)"],
-        c='violet',
+        c="violet",
         s=200,
         alpha=0.5,
-        label="Peaks")
+        label="Peaks",
+    )
 
-    ax.axhline(y=df_peaks["Z(px)"].mean(),
-               c="violet")
+    ax.axhline(y=df_peaks["Z(px)"].mean(), c="violet")
 
     ax.set(
         xlabel="Time since first photo (s)",
         ylabel="Elevation Z [px]",
         title="Elevations over time",
-        ylim=(50, 175)
+        ylim=(50, 175),
     )
 
     ax.annotate(
         r"$H$",
         xy=(2000, 86),
-        xycoords='data',
+        xycoords="data",
         xytext=(2000, 125),
-        textcoords='data',
+        textcoords="data",
         fontsize=20,
-        arrowprops=dict(arrowstyle="|-|"))
+        arrowprops=dict(arrowstyle="|-|"),
+    )
 
     ax.legend()
 
@@ -269,10 +262,14 @@ with cols[0]:
     st.warning(
         r"""
     What are the units of $Q_s$?  Why is porosity involved here?
-    """, icon="🤔")
+    """,
+        icon="🤔",
+    )
 
     st.info(
         """
         Calculate $Q_s$ and discuss the uncertainty on 
         your estimate.
-        """, icon="☑️")
+        """,
+        icon="☑️",
+    )

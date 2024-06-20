@@ -416,8 +416,8 @@ def sanitizeDataframe(df):
 
     df_clean = pd.DataFrame()
     df_clean["Timestamp"] = pd.to_datetime(df["Timestamp"], format=r'%Y:%m:%d %H:%M:%S')
-    df_clean["X(px)"] = [np.array(x.replace("[", "").replace("]", "").split()).astype(np.float) for x in df["X(px)"]]
-    df_clean["Z(px)"] = [np.array(x.replace("[", "").replace("]", "").split()).astype(np.float) for x in df["Z(px)"]]
+    df_clean["X(px)"] = [np.array(x.replace("[", "").replace("]", "").split()).astype(float) for x in df["X(px)"]]
+    df_clean["Z(px)"] = [np.array(x.replace("[", "").replace("]", "").split()).astype(float) for x in df["Z(px)"]]
 
     return df_clean
 

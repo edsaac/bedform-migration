@@ -11,7 +11,7 @@ r"""
 # CE440 Laboratory #2 - Bed sediment morphodynamics
 """
 
-st.video("assets/timelapse.mp4")
+st.video("assets/timelapse.mp4", autoplay=True, muted=True)
 
 """
 ## Objectives 
